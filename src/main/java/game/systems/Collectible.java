@@ -6,12 +6,12 @@ public class Collectible {
     protected double height, width;
     protected boolean collected;
 
-    public Collectible(double x, double y, double height, double width, boolean collected) {
+    public Collectible(double x, double y, double height, double width) {
         this.x = x;
         this.y = y;
         this.height = height;
         this.width = width;
-        this.collected = collected;
+        this.collected = false;
     }
 
     public double getX() {
