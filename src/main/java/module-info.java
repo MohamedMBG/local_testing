@@ -5,5 +5,5 @@ module com.example.bb_mario {
     requires com.almasb.fxgl.all;
 
     opens com.example.bb_mario to javafx.fxml;
-    exports com.example.bb_mario;
+    exports game.core;
 }
