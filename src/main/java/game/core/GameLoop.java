@@ -5,44 +5,56 @@ import javafx.animation.AnimationTimer;
 
 /**
  * A3 - Game Loop
- * Classe qui gère la boucle de jeu (rafraîchissement continu)
+ * Classe pour la boucle de jeu (mise à jour continue)
  */
 public class GameLoop extends AnimationTimer {
 
-    // Référence vers Game pour accéder aux objets du jeu
-    private Game game;
+    private Player player;
+    private Ground ground;
+    private InputManager inputManager;
+    private double windowWidth;
 
     /**
-     * Constructeur
+     * Constructeur de la boucle de jeu
      */
-    public GameLoop(Game game) {
-        this.game = game;
+    public GameLoop(Player player, Ground ground, InputManager inputManager, double windowWidth) {
+        this.player = player;
+        this.ground = ground;
+        this.inputManager = inputManager;
+        this.windowWidth = windowWidth;
     }
 
-    /**
-     * Méthode appelée automatiquement à chaque frame (~60 fois par seconde)
-     * @param now : le temps actuel en nanosecondes
-     */
     @Override
     public void handle(long now) {
-        // Appeler la méthode update() du jeu
+        // A3 - Appeler la méthode update à chaque frame
         update();
     }
 
     /**
-     * Méthode update() - appelée chaque frame
-     * C'est ici qu'on mettra :
-     * - La physique (gravité)
-     * - Les mouvements
-     * - Les collisions
-     * - Etc.
+     * A3 + A5 + A6 + A7 - Méthode update appelée à chaque frame
      */
     private void update() {
-        // Pour l'instant, juste un message pour tester
-        // On ajoutera le code de physique et mouvement dans les prochaines tâches
 
-        // TODO A5 : Ajouter la logique de mouvement
-        // TODO A6 : Ajouter la gravité et le saut
-        // TODO A7 : Ajouter les collisions
+        // A5 - Movement Logic (déplacement gauche/droite)
+        if (inputManager.isLeftPressed()) {
+            player.moveLeft();
+        }
+        if (inputManager.isRightPressed()) {
+            player.moveRight();
+        }
+
+        // A6 - Jump (saut)
+        if (inputManager.isJumpPressed()) {
+            player.jump();
+        }
+
+        // A6 - Appliquer la gravité
+        player.applyGravity();
+
+        // A7 - Vérifier la collision avec le sol
+        Physics.checkGroundCollision(player, ground);
+
+        // A5 - Empêcher le joueur de sortir de l'écran
+        player.constrainToBounds(windowWidth);
     }
 }

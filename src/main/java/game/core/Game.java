@@ -7,8 +7,8 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
 /**
- * A1 + A2 (Ground) + A8 (HUD)
- * Classe principale du jeu Mario
+ * VERSION FINALE COMPLÈTE
+ * A1 à A8 - Jeu Mario complet
  */
 public class Game extends Application {
 
@@ -19,46 +19,70 @@ public class Game extends Application {
     // Le Pane principal qui contiendra tous les éléments du jeu
     private Pane root;
 
-    // Objet Ground (sol)
+    // A2 - Game Objects
     private Ground ground;
+    private Player player;
 
-    // A8 - HUD (Score)
+    // A8 - HUD
     private HUD hud;
+
+    // A3 - Game Loop
+    private GameLoop gameLoop;
+
+    // A4 - Input Manager
+    private InputManager inputManager;
 
     @Override
     public void start(Stage primaryStage) {
-        // Créer le Pane principal (root)
+        // A1 - Créer le Pane principal (root)
         root = new Pane();
         root.setStyle("-fx-background-color: #5C94FC;"); // Bleu ciel comme Mario
 
-        // Créer la Scene avec le root et les dimensions
+        // A1 - Créer la Scene avec le root et les dimensions
         Scene scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-        // ========== A2 : Initialize Game Objects (Ground) ==========
+        // ========== A2 : Initialize Game Objects ==========
+
         // Créer le sol en bas de l'écran
         ground = new Ground(0, WINDOW_HEIGHT - 100, WINDOW_WIDTH, 100);
-
-        // Ajouter le sol au root
         root.getChildren().add(ground.getRectangle());
-        // ============================================================
+
+        // Créer le joueur (position initiale au centre, sur le sol)
+        player = new Player(100, WINDOW_HEIGHT - 140);
+        root.getChildren().add(player.getRectangle());
+
+        // ===================================================
 
         // ========== A8 : Basic HUD (Score) ==========
-        // Créer le HUD
         hud = new HUD();
-
-        // Ajouter le texte du score au root
         root.getChildren().add(hud.getScoreText());
         // ============================================
 
-        // Configurer le Stage (la fenêtre)
+        // ========== A4 : Input System ==========
+        inputManager = new InputManager();
+        inputManager.setupInput(scene);
+        // =======================================
+
+        // ========== A3 : Game Loop ==========
+        gameLoop = new GameLoop(player, ground, inputManager, WINDOW_WIDTH);
+        gameLoop.start(); // Démarrer la boucle de jeu
+        // ====================================
+
+        // A1 - Configurer le Stage (la fenêtre)
         primaryStage.setTitle("Super Mario Game - By Monssef");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
         primaryStage.show();
 
         System.out.println("✅ A1 - JavaFX Project Setup : TERMINÉ !");
-        System.out.println("✅ A2 - Ground créé : TERMINÉ !");
-        System.out.println("✅ A8 - HUD (Score) créé : TERMINÉ !");
+        System.out.println("✅ A2 - Game Objects (Player + Ground) : TERMINÉ !");
+        System.out.println("✅ A3 - Game Loop : TERMINÉ !");
+        System.out.println("✅ A4 - Input System : TERMINÉ !");
+        System.out.println("✅ A5 - Movement Logic : TERMINÉ !");
+        System.out.println("✅ A6 - Gravity & Jump : TERMINÉ !");
+        System.out.println("✅ A7 - Ground Collision : TERMINÉ !");
+        System.out.println("✅ A8 - HUD (Score) : TERMINÉ !");
+        System.out.println("🎮 JEU PRÊT ! Utilisez les flèches ou Q/D pour bouger, ESPACE pour sauter !");
     }
 
     public static void main(String[] args) {
