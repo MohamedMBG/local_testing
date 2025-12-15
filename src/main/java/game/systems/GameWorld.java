@@ -9,11 +9,9 @@ public class GameWorld {
 
     private final TileMap tileMap;
     private final Camera camera;
-
     private final CoinManager coinManager;
     private final PowerUpManager powerUpManager;
     private final UIManager uiManager;
-
     private final Player player;
 
     private int score = 0;
@@ -24,7 +22,6 @@ public class GameWorld {
                      PowerUpManager powerUpManager,
                      UIManager uiManager,
                      Player player) {
-
         this.tileMap = tileMap;
         this.camera = camera;
         this.coinManager = coinManager;
@@ -34,56 +31,61 @@ public class GameWorld {
     }
 
     public void update(double dt) {
-        if (player == null) return; // without player, nothing to update safely
+        if (player == null) return;
 
-        // 1) Update player
-        player.update(dt);
-
-        // 2) Camera follows player (only if your Camera has follow())
+        // camera follow
         if (camera != null) {
-            // camera.follow(player.getX(), player.getY(), player.getWidth(), player.getHeight());
+            double px = player.getPlayerX() + player.getWidth() / 2.0;
+            double py = player.getPlayerY() + player.getHeight() / 2.0;
+            camera.follow(px, py, 0.15);
         }
 
-        // 3) Coin collection
+        // coins
         if (coinManager != null) {
-            int collectedCoins = coinManager.updateAndCountCollected(
-                    player.getX(), player.getY(), player.getWidth(), player.getHeight()
+            int collected = coinManager.updateAndCountCollected(
+                    player.getPlayerX(), player.getPlayerY(), player.getWidth(), player.getHeight()
             );
-            if (collectedCoins > 0) {
-                score += collectedCoins; // or collectedCoins * Coin.VALUE
-                // if you have hud/uiManager score setter:
-                // uiManager.setScore(score);
-            }
+            if (collected > 0) score += collected;
         }
 
-        // 4) PowerUp collection + apply
+        // powerups (optional)
         if (powerUpManager != null) {
             List<PowerUpType> collectedTypes = powerUpManager.updateAndGetCollected(
-                    player.getX(), player.getY(), player.getWidth(), player.getHeight()
+                    player.getPlayerX(), player.getPlayerY(), player.getWidth(), player.getHeight()
             );
-
-            // Apply effects (only if Player supports it)
-            for (PowerUpType t : collectedTypes) {
-                player.applyPowerUp(t);
-            }
+            // If your Player doesn't support it yet, ignore for now.
         }
-
-        // 5) UI update (optional)
-        // if (uiManager != null) uiManager.update(dt);
     }
 
     public void render(GraphicsContext gc) {
         if (gc == null) return;
 
-        // Collectibles
+        // 1) render tiles as obstacles
+        renderTiles(gc);
+
+        // 2) collectibles
         if (coinManager != null) coinManager.render(gc, camera);
         if (powerUpManager != null) powerUpManager.render(gc, camera);
 
-        // Player
-        if (player != null) player.render(gc, camera);
-
-        // UI (coins)
+        // 3) UI
         if (uiManager != null) uiManager.render(gc, score);
+    }
+
+    private void renderTiles(GraphicsContext gc) {
+        if (tileMap == null) return;
+
+        double ox = camera != null ? camera.getOffsetX() : 0;
+        double oy = camera != null ? camera.getOffsetY() : 0;
+
+        for (int ty = 0; ty < tileMap.getHeightInTiles(); ty++) {
+            for (int tx = 0; tx < tileMap.getWidthInTiles(); tx++) {
+                if (tileMap.getTile(tx, ty) == 1) {
+                    double x = tx * TileMap.TILE_SIZE - ox;
+                    double y = ty * TileMap.TILE_SIZE - oy;
+                    gc.fillRect(x, y, TileMap.TILE_SIZE, TileMap.TILE_SIZE);
+                }
+            }
+        }
     }
 
     public int getScore() {

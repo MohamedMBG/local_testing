@@ -1,88 +1,140 @@
-// Fichier : src/main/java/game/core/Game.java
 package game.core;
 
+import game.systems.*;
 import javafx.application.Application;
+import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
-/**
- * VERSION FINALE COMPLÈTE
- * A1 à A8 - Jeu Mario complet
- */
+import java.util.List;
+
 public class Game extends Application {
 
-    // Dimensions de la fenêtre
     private static final int WINDOW_WIDTH = 800;
     private static final int WINDOW_HEIGHT = 600;
 
-    // Le Pane principal qui contiendra tous les éléments du jeu
     private Pane root;
 
-    // A2 - Game Objects
     private Ground ground;
     private Player player;
 
-    // A8 - HUD
     private HUD hud;
-
-    // A3 - Game Loop
     private GameLoop gameLoop;
-
-    // A4 - Input Manager
     private InputManager inputManager;
+
+    private GameWorld world;
+    private Canvas overlayCanvas;
+    private GraphicsContext gc;
+
+    private Group worldLayer;
 
     @Override
     public void start(Stage primaryStage) {
-        // A1 - Créer le Pane principal (root)
-        root = new Pane();
-        root.setStyle("-fx-background-color: #5C94FC;"); // Bleu ciel comme Mario
 
-        // A1 - Créer la Scene avec le root et les dimensions
+        root = new Pane();
+        root.setStyle("-fx-background-color: #5C94FC;");
+
         Scene scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-        // ========== A2 : Initialize Game Objects ==========
+        // BIGGER LEVEL
+        List<String> rawLines = List.of(
+                "................................................................................",
+                "................................................................................",
+                "................................................................................",
+                "...........C.....................C.....................C.......................",
+                "......####..................####...............####............................",
+                "................................................................................",
+                "....C....................C..................C.................................",
+                "....................####.........................####.........................",
+                "................................................................................",
+                ".....####............................................................####......",
+                "................................................................................",
+                "................................................................................",
+                "....P..........................................................................",
+                "#########################................................................#######"
+        );
 
-        // Créer le sol en bas de l'écran
-        ground = new Ground(0, WINDOW_HEIGHT - 100, WINDOW_WIDTH, 100);
-        root.getChildren().add(ground.getRectangle());
+        // ✅ Normalize all lines to same length
+        List<String> lines = normalizeLevelLines(rawLines);
 
-        // Créer le joueur (position initiale au centre, sur le sol)
-        player = new Player(100, WINDOW_HEIGHT - 140);
-        root.getChildren().add(player.getRectangle());
+        // ✅ Create loader (you forgot this)
+        LevelLoader loader = new LevelLoader();
+        LevelLoader.LevelData level = loader.loadFromLines(lines);
 
-        // ===================================================
+        TileMap tileMap = level.getTileMap();
 
-        // ========== A8 : Basic HUD (Score) ==========
+        // Camera (height, width) - as in your class
+        Camera camera = new Camera(WINDOW_HEIGHT, WINDOW_WIDTH);
+
+        // World layer: put player + ground rectangles here
+        worldLayer = new Group();
+        root.getChildren().add(worldLayer);
+
+        // Ground should be world width
+        ground = new Ground(0, WINDOW_HEIGHT - 100, tileMap.getWidthInPixels(), 100);
+        worldLayer.getChildren().add(ground.getRectangle());
+
+        // Player spawn from level
+        player = new Player(level.getPlayerSpawnX(), level.getPlayerSpawnY());
+        worldLayer.getChildren().add(player.getRectangle());
+
+        // HUD stays fixed on screen
         hud = new HUD();
         root.getChildren().add(hud.getScoreText());
-        // ============================================
 
-        // ========== A4 : Input System ==========
+        // Input
         inputManager = new InputManager();
         inputManager.setupInput(scene);
-        // =======================================
 
-        // ========== A3 : Game Loop ==========
-        gameLoop = new GameLoop(player, ground, inputManager, WINDOW_WIDTH);
-        gameLoop.start(); // Démarrer la boucle de jeu
-        // ====================================
+        // Canvas overlay (tiles / coins / UI)
+        overlayCanvas = new Canvas(WINDOW_WIDTH, WINDOW_HEIGHT);
+        gc = overlayCanvas.getGraphicsContext2D();
+        root.getChildren().add(overlayCanvas);
 
-        // A1 - Configurer le Stage (la fenêtre)
-        primaryStage.setTitle("Super Mario Game - By Monssef");
+        // Managers
+        CoinManager coinManager = new CoinManager();
+        coinManager.spawnFrom(level.getCoinSpawns(), 16, 16);
+
+        PowerUpManager powerUpManager = new PowerUpManager();
+        powerUpManager.spawnFrom(level.getPowerUpSpawns(), 20, 20, PowerUpType.MUSHROOM);
+
+        UIManager uiManager = new UIManager(20, 40);
+
+        world = new GameWorld(tileMap, camera, coinManager, powerUpManager, uiManager, player);
+
+        // Game loop: pass camera + worldLayer (must match your GameLoop constructor)
+        gameLoop = new GameLoop(
+                player,
+                ground,
+                inputManager,
+                WINDOW_WIDTH,
+                WINDOW_HEIGHT,
+                world,
+                gc,
+                tileMap,
+                camera,
+                worldLayer
+        );
+        gameLoop.start();
+
+        primaryStage.setTitle("Super Mario Game - Merged");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
         primaryStage.show();
 
-        System.out.println("✅ A1 - JavaFX Project Setup : TERMINÉ !");
-        System.out.println("✅ A2 - Game Objects (Player + Ground) : TERMINÉ !");
-        System.out.println("✅ A3 - Game Loop : TERMINÉ !");
-        System.out.println("✅ A4 - Input System : TERMINÉ !");
-        System.out.println("✅ A5 - Movement Logic : TERMINÉ !");
-        System.out.println("✅ A6 - Gravity & Jump : TERMINÉ !");
-        System.out.println("✅ A7 - Ground Collision : TERMINÉ !");
-        System.out.println("✅ A8 - HUD (Score) : TERMINÉ !");
-        System.out.println("🎮 JEU PRÊT ! Utilisez les flèches ou Q/D pour bouger, ESPACE pour sauter !");
+        System.out.println("Coins spawns: " + level.getCoinSpawns().size());
+        System.out.println("Map pixels: " + tileMap.getWidthInPixels() + " x " + tileMap.getHeightInPixels());
+    }
+
+    // ✅ MUST be inside the Game class
+    private static List<String> normalizeLevelLines(List<String> raw) {
+        int width = raw.stream().mapToInt(String::length).max().orElse(0);
+        return raw.stream()
+                .map(s -> String.format("%-" + width + "s", s).replace(' ', '.'))
+                .toList();
     }
 
     public static void main(String[] args) {

@@ -1,141 +1,74 @@
-// Fichier : src/main/java/game/core/Player.java
 package game.core;
 
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
-/**
- * A2 - Player (Joueur)
- * Classe représentant le joueur (Mario)
- */
 public class Player {
 
-    private Rectangle rectangle;
+    private final Rectangle rectangle;
 
-    // Position et dimensions
-    private double playerX;
-    private double playerY;
-    private double width = 40;
-    private double height = 40;
+    private double x, y;
+    private final double width = 40;
+    private final double height = 40;
 
-    // Physique (A6)
-    private double velocityY = 0;
-    private boolean isOnGround = false;
+    private double vx = 0;
+    private double vy = 0;
 
-    // Constantes
-    private static final double GRAVITY = 0.5;
-    private static final double JUMP_STRENGTH = -12;
-    private static final double MOVE_SPEED = 5;
+    private boolean onGround = false;
 
-    /**
-     * Constructeur du joueur
-     * @param startX Position X initiale
-     * @param startY Position Y initiale
-     */
+    private static final double GRAVITY = 2200;
+    private static final double MOVE_SPEED = 260;
+    private static final double JUMP_SPEED = -750;
+
     public Player(double startX, double startY) {
-        this.playerX = startX;
-        this.playerY = startY;
+        this.x = startX;
+        this.y = startY;
 
-        // Créer le rectangle du joueur (rouge comme Mario)
-        rectangle = new Rectangle(playerX, playerY, width, height);
+        rectangle = new Rectangle(x, y, width, height);
         rectangle.setFill(Color.RED);
         rectangle.setStroke(Color.DARKRED);
         rectangle.setStrokeWidth(2);
     }
 
-    // Getters
-    public Rectangle getRectangle() {
-        return rectangle;
-    }
+    public Rectangle getRectangle() { return rectangle; }
 
-    public double getPlayerX() {
-        return playerX;
-    }
+    public double getPlayerX() { return x; }
+    public double getPlayerY() { return y; }
+    public double getWidth() { return width; }
+    public double getHeight() { return height; }
 
-    public double getPlayerY() {
-        return playerY;
-    }
+    public double getVx() { return vx; }
+    public double getVy() { return vy; }
+    public boolean isOnGround() { return onGround; }
 
-    public double getVelocityY() {
-        return velocityY;
-    }
+    public void setPlayerX(double x) { this.x = x; rectangle.setX(x); }
+    public void setPlayerY(double y) { this.y = y; rectangle.setY(y); }
+    public void setVx(double vx) { this.vx = vx; }
+    public void setVy(double vy) { this.vy = vy; }
+    public void setOnGround(boolean v) { this.onGround = v; }
 
-    public boolean isOnGround() {
-        return isOnGround;
-    }
+    public void moveLeft() { vx = -MOVE_SPEED; }
+    public void moveRight() { vx = MOVE_SPEED; }
+    public void stopX() { vx = 0; }
 
-    public double getWidth() {
-        return width;
-    }
-
-    public double getHeight() {
-        return height;
-    }
-
-    // Setters
-    public void setPlayerX(double x) {
-        this.playerX = x;
-        rectangle.setX(x);
-    }
-
-    public void setPlayerY(double y) {
-        this.playerY = y;
-        rectangle.setY(y);
-    }
-
-    public void setVelocityY(double velocityY) {
-        this.velocityY = velocityY;
-    }
-
-    public void setOnGround(boolean onGround) {
-        this.isOnGround = onGround;
-    }
-
-    /**
-     * A5 - Déplacer le joueur à gauche
-     */
-    public void moveLeft() {
-        playerX -= MOVE_SPEED;
-        rectangle.setX(playerX);
-    }
-
-    /**
-     * A5 - Déplacer le joueur à droite
-     */
-    public void moveRight() {
-        playerX += MOVE_SPEED;
-        rectangle.setX(playerX);
-    }
-
-    /**
-     * A6 - Faire sauter le joueur
-     */
     public void jump() {
-        if (isOnGround) {
-            velocityY = JUMP_STRENGTH;
-            isOnGround = false;
+        if (onGround) {
+            vy = JUMP_SPEED;
+            onGround = false;
         }
     }
 
-    /**
-     * A6 - Appliquer la gravité
-     */
-    public void applyGravity() {
-        velocityY += GRAVITY;
-        playerY += velocityY;
-        rectangle.setY(playerY);
+    public void applyGravity(double dt) {
+        vy += GRAVITY * dt;
     }
 
-    /**
-     * A5 - Empêcher le joueur de sortir de l'écran
-     */
+    public void integrate(double dt) {
+        setPlayerX(x + vx * dt);
+        setPlayerY(y + vy * dt);
+    }
+
     public void constrainToBounds(double windowWidth) {
-        if (playerX < 0) {
-            playerX = 0;
-        }
-        if (playerX + width > windowWidth) {
-            playerX = windowWidth - width;
-        }
-        rectangle.setX(playerX);
+        if (x < 0) setPlayerX(0);
+        if (x + width > windowWidth) setPlayerX(windowWidth - width);
     }
 }
