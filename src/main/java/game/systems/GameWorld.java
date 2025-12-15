@@ -9,86 +9,120 @@ public class GameWorld {
     private final Camera camera;
     private final CoinManager coinManager;
     private final EnemyManager enemyManager;
-    private final UIManager ui;
+    private final UIManager uiManager;
     private final Player player;
 
+    // ---- Game state ----
+    private int score = 0;
+    private int coins = 0;
+    private int lives = 3;
+
+    // Respawn point
     private final double spawnX;
     private final double spawnY;
 
-    private int score = 0;
-    private int lives = 3;
-
-    public GameWorld(TileMap tileMap,
-                     Camera camera,
-                     CoinManager coinManager,
-                     EnemyManager enemyManager,
-                     UIManager ui,
-                     Player player,
-                     double spawnX,
-                     double spawnY) {
-
+    public GameWorld(
+            TileMap tileMap,
+            Camera camera,
+            CoinManager coinManager,
+            EnemyManager enemyManager,
+            UIManager uiManager,
+            Player player,
+            double spawnX,
+            double spawnY
+    ) {
         this.tileMap = tileMap;
         this.camera = camera;
         this.coinManager = coinManager;
         this.enemyManager = enemyManager;
-        this.ui = ui;
+        this.uiManager = uiManager;
         this.player = player;
         this.spawnX = spawnX;
         this.spawnY = spawnY;
     }
 
+    // -------------------------------------------------
+    // UPDATE
+    // -------------------------------------------------
     public void update(double dt) {
 
-        // ===== CAMERA FOLLOW =====
-        double px = player.getPlayerX() + player.getWidth() / 2;
-        double py = player.getPlayerY() + player.getHeight() / 2;
+        // ===== Camera follow player (center) =====
+        double cx = player.getPlayerX() + player.getWidth() / 2.0;
+        double cy = player.getPlayerY() + player.getHeight() / 2.0;
 
-        camera.follow(px, py, 0.12);
+        camera.follow(cx, cy, 0.12);
         camera.clampToMap(
                 tileMap.getWidthInPixels(),
                 tileMap.getHeightInPixels()
         );
 
-        // ===== COINS =====
-        score += coinManager.updateAndCountCollected(
+        // ===== Coins =====
+        int collected = coinManager.updateAndCountCollected(
                 player.getPlayerX(),
                 player.getPlayerY(),
                 player.getWidth(),
                 player.getHeight()
         );
 
-        // ===== ENEMIES =====
-        boolean hit = enemyManager.update(dt, player, tileMap);
-        if (hit) {
-            lives--;
-            player.setPlayerX(spawnX);
-            player.setPlayerY(spawnY);
+        if (collected > 0) {
+            coins += collected;
+            score += collected * 10;
         }
+
+        // ===== (Future) Enemies =====
+        // if (enemyManager.playerHit(player)) {
+        //     loseLife();
+        // }
 
         // ===== UI =====
-        ui.set(score, lives);
+        uiManager.setAll(score, coins, lives);
     }
 
+    // -------------------------------------------------
+    // RENDER
+    // -------------------------------------------------
     public void render(GraphicsContext gc) {
+        if (gc == null) return;
 
-        // ===== TILES =====
-        double ox = camera.getOffsetX();
-        double oy = camera.getOffsetY();
-
-        for (int y = 0; y < tileMap.getHeightInTiles(); y++) {
-            for (int x = 0; x < tileMap.getWidthInTiles(); x++) {
-                if (tileMap.getTile(x, y) == 1) {
-                    gc.fillRect(
-                            x * TileMap.TILE_SIZE - ox,
-                            y * TileMap.TILE_SIZE - oy,
-                            TileMap.TILE_SIZE,
-                            TileMap.TILE_SIZE
-                    );
-                }
-            }
-        }
+        gc.clearRect(
+                0,
+                0,
+                camera.getViewWidth(),
+                camera.getViewHeight()
+        );
 
         coinManager.render(gc, camera);
-        enemyManager.render(gc, camera);
+        // enemyManager.render(gc, camera);
+    }
+
+    // -------------------------------------------------
+    // Helpers
+    // -------------------------------------------------
+    private void loseLife() {
+        lives--;
+        respawnPlayer();
+    }
+
+    private void respawnPlayer() {
+        player.setPlayerX(spawnX);
+        player.setPlayerY(spawnY);
+        player.setVelocityX(0);
+        player.setVelocityY(0);
+        player.setOnGround(false);
+    }
+
+    // -------------------------------------------------
+    // Getters (optional)
+    // -------------------------------------------------
+    public int getScore() {
+        return score;
+    }
+
+    public int getCoins() {
+        return coins;
+    }
+
+    public int getLives() {
+        return lives;
     }
 }

@@ -10,7 +10,7 @@ public class Physics {
 
             double top = ground.getY();
             player.setPlayerY(top - player.getHeight());
-            player.setVy(0);
+            player.setVelocityY(0);
             player.setOnGround(true);
         }
     }
@@ -21,12 +21,12 @@ public class Physics {
         p.applyGravity(dt);
 
         // --- Move X then collide on X ---
-        double newX = p.getPlayerX() + p.getVx() * dt;
+        double newX = p.getPlayerX() + p.getVelocityX() * dt;
         p.setPlayerX(newX);
         collideX(p, map);
 
         // --- Move Y then collide on Y ---
-        double newY = p.getPlayerY() + p.getVy() * dt;
+        double newY = p.getPlayerY() + p.getVelocityY() * dt;
         p.setPlayerY(newY);
         collideY(p, map);
     }
@@ -43,23 +43,23 @@ public class Physics {
         int bottomTile = (int) Math.floor((y + h - 1) / TileMap.TILE_SIZE);
 
         // moving right
-        if (p.getVx() > 0) {
+        if (p.getVelocityX() > 0) {
             for (int ty = topTile; ty <= bottomTile; ty++) {
                 if (map.isSolidTile(rightTile, ty)) {
                     double tileLeft = rightTile * TileMap.TILE_SIZE;
                     p.setPlayerX(tileLeft - w);
-                    p.setVx(0);
+                    p.setVelocityX(0);
                     return;
                 }
             }
         }
         // moving left
-        else if (p.getVx() < 0) {
+        else if (p.getVelocityX() < 0) {
             for (int ty = topTile; ty <= bottomTile; ty++) {
                 if (map.isSolidTile(leftTile, ty)) {
                     double tileRight = (leftTile + 1) * TileMap.TILE_SIZE;
                     p.setPlayerX(tileRight);
-                    p.setVx(0);
+                    p.setVelocityX(0);
                     return;
                 }
             }
@@ -80,24 +80,24 @@ public class Physics {
         p.setOnGround(false);
 
         // falling
-        if (p.getVy() > 0) {
+        if (p.getVelocityY() > 0) {
             for (int tx = leftTile; tx <= rightTile; tx++) {
                 if (map.isSolidTile(tx, bottomTile)) {
                     double tileTop = bottomTile * TileMap.TILE_SIZE;
                     p.setPlayerY(tileTop - h);
-                    p.setVy(0);
+                    p.setVelocityY(0);
                     p.setOnGround(true);
                     return;
                 }
             }
         }
         // jumping
-        else if (p.getVy() < 0) {
+        else if (p.getVelocityY() < 0) {
             for (int tx = leftTile; tx <= rightTile; tx++) {
                 if (map.isSolidTile(tx, topTile)) {
                     double tileBottom = (topTile + 1) * TileMap.TILE_SIZE;
                     p.setPlayerY(tileBottom);
-                    p.setVy(0);
+                    p.setVelocityY(0);
                     return;
                 }
             }

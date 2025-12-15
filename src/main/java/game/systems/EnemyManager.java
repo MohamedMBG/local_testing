@@ -26,9 +26,9 @@ public class EnemyManager {
                     player.getHeight())) {
 
                 // Jump kill logic
-                if (player.getVy() > 0) {
+                if (player.getVelocityY() > 0) {
                     e.kill();
-                    player.setVy(-400);
+                    player.setVelocityY(-400);
                 } else {
                     return true; // player hit
                 }

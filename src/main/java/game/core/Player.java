@@ -5,70 +5,178 @@ import javafx.scene.shape.Rectangle;
 
 public class Player {
 
+    // -------------------------
+    // Visual
+    // -------------------------
     private final Rectangle rectangle;
 
-    private double x, y;
+    // -------------------------
+    // Position & size
+    // -------------------------
+    private double x;
+    private double y;
     private final double width = 40;
     private final double height = 40;
 
-    private double vx = 0;
-    private double vy = 0;
+    // -------------------------
+    // Physics
+    // -------------------------
+    private double velocityX = 0;
+    private double velocityY = 0;
 
     private boolean onGround = false;
 
-    private static final double GRAVITY = 2200;
-    private static final double MOVE_SPEED = 260;
-    private static final double JUMP_SPEED = -750;
+    // -------------------------
+    // Tunable constants (feel)
+    // -------------------------
+    private static final double MOVE_SPEED = 220;     // px/s
+    private static final double GRAVITY = 1200;       // px/s²
+    private static final double JUMP_FORCE = -520;    // px/s
 
+    // -------------------------
+    // Constructor
+    // -------------------------
     public Player(double startX, double startY) {
         this.x = startX;
         this.y = startY;
 
-        rectangle = new Rectangle(x, y, width, height);
+        rectangle = new Rectangle(width, height);
         rectangle.setFill(Color.RED);
         rectangle.setStroke(Color.DARKRED);
         rectangle.setStrokeWidth(2);
+
+        syncRect();
     }
 
-    public Rectangle getRectangle() { return rectangle; }
+    // -------------------------
+    // Update (called every frame)
+    // -------------------------
+    public void update(double dt) {
+        x += velocityX * dt;
+        y += velocityY * dt;
+        syncRect();
+    }
 
-    public double getPlayerX() { return x; }
-    public double getPlayerY() { return y; }
-    public double getWidth() { return width; }
-    public double getHeight() { return height; }
+    // -------------------------
+    // Movement input
+    // -------------------------
+    public void moveLeft() {
+        velocityX = -MOVE_SPEED;
+    }
 
-    public double getVx() { return vx; }
-    public double getVy() { return vy; }
-    public boolean isOnGround() { return onGround; }
+    public void moveRight() {
+        velocityX = MOVE_SPEED;
+    }
 
-    public void setPlayerX(double x) { this.x = x; rectangle.setX(x); }
-    public void setPlayerY(double y) { this.y = y; rectangle.setY(y); }
-    public void setVx(double vx) { this.vx = vx; }
-    public void setVy(double vy) { this.vy = vy; }
-    public void setOnGround(boolean v) { this.onGround = v; }
-
-    public void moveLeft() { vx = -MOVE_SPEED; }
-    public void moveRight() { vx = MOVE_SPEED; }
-    public void stopX() { vx = 0; }
+    public void stopX() {
+        velocityX = 0;
+    }
 
     public void jump() {
         if (onGround) {
-            vy = JUMP_SPEED;
+            velocityY = JUMP_FORCE;
             onGround = false;
         }
     }
 
+    // -------------------------
+    // World bounds (WORLD width, not screen)
+    // -------------------------
+    public void constrainToBounds(double worldWidth) {
+        if (x < 0) {
+            x = 0;
+        }
+        if (x + width > worldWidth) {
+            x = worldWidth - width;
+        }
+        syncRect();
+    }
+
+    // -------------------------
+    // Collision helpers
+    // -------------------------
+    public void landOn(double groundY) {
+        y = groundY - height;
+        velocityY = 0;
+        onGround = true;
+        syncRect();
+    }
+
+    public void hitCeiling(double ceilingY) {
+        y = ceilingY;
+        velocityY = 0;
+        syncRect();
+    }
+
+    // -------------------------
+    // Sync visual
+    // -------------------------
+    private void syncRect() {
+        rectangle.setX(x);
+        rectangle.setY(y);
+    }
+
+    // -------------------------
+    // Getters
+    // -------------------------
+    public Rectangle getRectangle() {
+        return rectangle;
+    }
+
     public void applyGravity(double dt) {
-        vy += GRAVITY * dt;
+        velocityY += GRAVITY * dt;
     }
 
-    public void integrate(double dt) {
-        setPlayerX(x + vx * dt);
-        setPlayerY(y + vy * dt);
+    public double getPlayerX() {
+        return x;
     }
 
-    public void constrainToBounds(double windowWidth) {
-        if (x < 0) setPlayerX(0);
-        if (x + width > windowWidth) setPlayerX(windowWidth - width);
+    public double getPlayerY() {
+        return y;
+    }
+
+    public double getWidth() {
+        return width;
+    }
+
+    public double getHeight() {
+        return height;
+    }
+
+    public double getVelocityX() {
+        return velocityX;
+    }
+
+    public double getVelocityY() {
+        return velocityY;
+    }
+
+    public boolean isOnGround() {
+        return onGround;
+    }
+
+    // -------------------------
+    // Setters (USED BY PHYSICS & RESPAWN)
+    // -------------------------
+    public void setPlayerX(double x) {
+        this.x = x;
+        syncRect();
+    }
+
+    public void setPlayerY(double y) {
+        this.y = y;
+        syncRect();
+    }
+
+    public void setVelocityX(double vx) {
+        this.velocityX = vx;
+    }
+
+    public void setVelocityY(double vy) {
+        this.velocityY = vy;
+    }
+
+    public void setOnGround(boolean onGround) {
+        this.onGround = onGround;
     }
 }
