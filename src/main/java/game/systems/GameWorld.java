@@ -2,6 +2,7 @@ package game.systems;
 
 import game.core.Player;
 import javafx.scene.canvas.GraphicsContext;
+
 import java.util.List;
 
 public class GameWorld {
@@ -13,7 +14,6 @@ public class GameWorld {
     private final PowerUpManager powerUpManager;
     private final UIManager uiManager;
 
-    // ✅ now GameWorld owns the player
     private final Player player;
 
     private int score = 0;
@@ -34,42 +34,59 @@ public class GameWorld {
     }
 
     public void update(double dt) {
+        if (player == null) return; // without player, nothing to update safely
 
-        // 1) update player (method name may differ in your Player)
+        // 1) Update player
         player.update(dt);
 
-        // 2) camera follows player (adapt to your camera API)
-        // camera.follow(player.getX(), player.getY(), player.getWidth(), player.getHeight());
-
-        // 3) coin collection
-        int collectedCoins = coinManager.updateAndCountCollected(
-                player.getX(), player.getY(), player.getWidth(), player.getHeight()
-        );
-        if (collectedCoins > 0) {
-            score += collectedCoins; // or * Coin.VALUE
-            // uiManager.setScore(score); // if you have it
+        // 2) Camera follows player (only if your Camera has follow())
+        if (camera != null) {
+            // camera.follow(player.getX(), player.getY(), player.getWidth(), player.getHeight());
         }
 
-        // 4) powerup collection + apply
-        List<PowerUpType> types = powerUpManager.updateAndGetCollected(
-                player.getX(), player.getY(), player.getWidth(), player.getHeight()
-        );
-
-        for (PowerUpType t : types) {
-            // Best practice: Player handles effects
-            player.applyPowerUp(t); // if Player doesn’t have this, add it in core (Person A can)
+        // 3) Coin collection
+        if (coinManager != null) {
+            int collectedCoins = coinManager.updateAndCountCollected(
+                    player.getX(), player.getY(), player.getWidth(), player.getHeight()
+            );
+            if (collectedCoins > 0) {
+                score += collectedCoins; // or collectedCoins * Coin.VALUE
+                // if you have hud/uiManager score setter:
+                // uiManager.setScore(score);
+            }
         }
+
+        // 4) PowerUp collection + apply
+        if (powerUpManager != null) {
+            List<PowerUpType> collectedTypes = powerUpManager.updateAndGetCollected(
+                    player.getX(), player.getY(), player.getWidth(), player.getHeight()
+            );
+
+            // Apply effects (only if Player supports it)
+            for (PowerUpType t : collectedTypes) {
+                player.applyPowerUp(t);
+            }
+        }
+
+        // 5) UI update (optional)
+        // if (uiManager != null) uiManager.update(dt);
     }
 
     public void render(GraphicsContext gc) {
-        // tileMap.render(gc, camera); // if implemented
+        if (gc == null) return;
 
-        coinManager.render(gc, camera);
-        powerUpManager.render(gc, camera);
+        // Collectibles
+        if (coinManager != null) coinManager.render(gc, camera);
+        if (powerUpManager != null) powerUpManager.render(gc, camera);
 
-        // Player rendering (adapt to your Player render method)
-        player.render(gc, camera);
+        // Player
+        if (player != null) player.render(gc, camera);
 
-        // uiManager.render(gc); // if implemented
+        // UI (coins)
+        if (uiManager != null) uiManager.render(gc, score);
+    }
+
+    public int getScore() {
+        return score;
     }
 }
