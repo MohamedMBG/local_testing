@@ -16,100 +16,80 @@ public class Game extends Application {
     private static final int WINDOW_WIDTH = 800;
     private static final int WINDOW_HEIGHT = 600;
 
-    private Pane root;
-
-    private Ground ground;
-    private Player player;
-
-    private HUD hud;
-    private GameLoop gameLoop;
-    private InputManager inputManager;
-
-    private GameWorld world;
-    private Canvas overlayCanvas;
-    private GraphicsContext gc;
-
-    private Group worldLayer;
-
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage stage) {
 
-        root = new Pane();
+        Pane root = new Pane();
+        Scene scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
         root.setStyle("-fx-background-color: #5C94FC;");
 
-        Scene scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
-
-        // BIGGER LEVEL
+        // ================= LEVEL =================
         List<String> rawLines = List.of(
-                "................................................................................",
-                "................................................................................",
-                "................................................................................",
-                "...........C.....................C.....................C.......................",
-                "......####..................####...............####............................",
-                "................................................................................",
-                "....C....................C..................C.................................",
-                "....................####.........................####.........................",
-                "................................................................................",
-                ".....####............................................................####......",
-                "................................................................................",
-                "................................................................................",
-                "....P..........................................................................",
-                "#########################................................................#######"
+                "................................................................................................................",
+                "................................................................................................................",
+                "........C......................E......................C.....................E...............................",
+                "......####..............####..............####..............####..............####..........................",
+                "................................................................................................................",
+                "....P...........................................................................................................",
+                "###############################...............................................###############################"
         );
 
-        // ✅ Normalize all lines to same length
         List<String> lines = normalizeLevelLines(rawLines);
 
-        // ✅ Create loader (you forgot this)
         LevelLoader loader = new LevelLoader();
         LevelLoader.LevelData level = loader.loadFromLines(lines);
-
         TileMap tileMap = level.getTileMap();
 
-        // Camera (height, width) - as in your class
+        // ================= CAMERA =================
         Camera camera = new Camera(WINDOW_HEIGHT, WINDOW_WIDTH);
 
-        // World layer: put player + ground rectangles here
-        worldLayer = new Group();
+        // ================= WORLD LAYER =================
+        Group worldLayer = new Group();
         root.getChildren().add(worldLayer);
 
-        // Ground should be world width
-        ground = new Ground(0, WINDOW_HEIGHT - 100, tileMap.getWidthInPixels(), 100);
+        Ground ground = new Ground(0, WINDOW_HEIGHT - 80, tileMap.getWidthInPixels(), 80);
         worldLayer.getChildren().add(ground.getRectangle());
 
-        // Player spawn from level
-        player = new Player(level.getPlayerSpawnX(), level.getPlayerSpawnY());
+        Player player = new Player(level.getPlayerSpawnX(), level.getPlayerSpawnY());
         worldLayer.getChildren().add(player.getRectangle());
 
-        // HUD stays fixed on screen
-        hud = new HUD();
-        root.getChildren().add(hud.getScoreText());
+        // ================= UI =================
+        UIManager uiManager = new UIManager(20, 30);
+        root.getChildren().add(uiManager.getNode());
 
-        // Input
-        inputManager = new InputManager();
-        inputManager.setupInput(scene);
+        // ================= INPUT =================
+        InputManager input = new InputManager();
+        input.setupInput(scene);
 
-        // Canvas overlay (tiles / coins / UI)
-        overlayCanvas = new Canvas(WINDOW_WIDTH, WINDOW_HEIGHT);
-        gc = overlayCanvas.getGraphicsContext2D();
-        root.getChildren().add(overlayCanvas);
+        // ================= CANVAS =================
+        Canvas canvas = new Canvas(WINDOW_WIDTH, WINDOW_HEIGHT);
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        root.getChildren().add(canvas);
 
-        // Managers
+        // ================= MANAGERS =================
         CoinManager coinManager = new CoinManager();
-        coinManager.spawnFrom(level.getCoinSpawns(), 16, 16);
+        coinManager.spawnFrom(level.getCoinSpawns());
 
-        PowerUpManager powerUpManager = new PowerUpManager();
-        powerUpManager.spawnFrom(level.getPowerUpSpawns(), 20, 20, PowerUpType.MUSHROOM);
+        EnemyManager enemyManager = new EnemyManager();
+        enemyManager.spawnFrom(level.getEnemySpawns());
 
-        UIManager uiManager = new UIManager(20, 40);
+        // ================= WORLD =================
+        GameWorld world = new GameWorld(
+                tileMap,
+                camera,
+                coinManager,
+                enemyManager,
+                uiManager,
+                player,
+                level.getPlayerSpawnX(),
+                level.getPlayerSpawnY()
+        );
 
-        world = new GameWorld(tileMap, camera, coinManager, powerUpManager, uiManager, player);
-
-        // Game loop: pass camera + worldLayer (must match your GameLoop constructor)
-        gameLoop = new GameLoop(
+        // ================= LOOP =================
+        GameLoop loop = new GameLoop(
                 player,
                 ground,
-                inputManager,
+                input,
                 WINDOW_WIDTH,
                 WINDOW_HEIGHT,
                 world,
@@ -118,18 +98,15 @@ public class Game extends Application {
                 camera,
                 worldLayer
         );
-        gameLoop.start();
 
-        primaryStage.setTitle("Super Mario Game - Merged");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(false);
-        primaryStage.show();
+        loop.start();
 
-        System.out.println("Coins spawns: " + level.getCoinSpawns().size());
-        System.out.println("Map pixels: " + tileMap.getWidthInPixels() + " x " + tileMap.getHeightInPixels());
+        stage.setScene(scene);
+        stage.setTitle("Super Mario – Real Game");
+        stage.setResizable(false);
+        stage.show();
     }
 
-    // ✅ MUST be inside the Game class
     private static List<String> normalizeLevelLines(List<String> raw) {
         int width = raw.stream().mapToInt(String::length).max().orElse(0);
         return raw.stream()

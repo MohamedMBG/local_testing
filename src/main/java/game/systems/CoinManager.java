@@ -10,10 +10,17 @@ public class CoinManager {
 
     private final List<Coin> coins = new ArrayList<>();
 
+    // Clears the coins
     public void remove() {
         coins.clear();
     }
 
+    // Overloaded method for easier use
+    public void spawnFrom(List<double[]> positions) {
+        spawnFrom(positions, 16, 16);  // Default coin size
+    }
+
+    // Spawns coins with specific size
     public void spawnFrom(List<double[]> positions, double coinWidth, double coinHeight) {
         if (positions == null) return;
 
@@ -23,11 +30,12 @@ public class CoinManager {
             double x = pos[0];
             double y = pos[1];
 
+            // Create a new coin and add it to the list
             coins.add(new Coin(x, y, coinWidth, coinHeight));
         }
     }
 
-    // ✅ Counts collected coins AND removes them from the list
+    // Updates and counts the collected coins, removes them from the world
     public int updateAndCountCollected(double playerX, double playerY, double playerW, double playerH) {
         int collectedThisFrame = 0;
 
@@ -39,29 +47,33 @@ public class CoinManager {
                 boolean justCollected = coin.tryCollect(playerX, playerY, playerW, playerH);
                 if (justCollected) {
                     collectedThisFrame++;
-                    it.remove(); // ✅ important: remove from world
+                    it.remove(); // Remove the collected coin from world
                 }
             } else {
-                // If somehow already collected, remove it anyway
-                it.remove();
+                it.remove(); // If coin is already collected, remove it
             }
         }
 
         return collectedThisFrame;
     }
 
-    // ✅ Let manager render everything it owns
+    // Renders the coins onto the canvas
     public void render(GraphicsContext gc, Camera camera) {
         for (Coin coin : coins) {
-            // If you have a sprite draw method in Coin, call it here.
-            // Otherwise draw a simple placeholder.
-            double screenX = coin.getX() - camera.getX();
-            double screenY = coin.getY() - camera.getY();
+            // Get the camera offset (for scrolling)
+            double ox = camera.getOffsetX();
+            double oy = camera.getOffsetY();
 
+            // Get the screen coordinates based on camera offsets
+            double screenX = coin.getX() - ox;
+            double screenY = coin.getY() - oy;
+
+            // Draw the coin (or you can use sprites here)
             gc.fillOval(screenX, screenY, coin.getWidth(), coin.getHeight());
         }
     }
 
+    // Getter for the list of coins
     public List<Coin> getCoins() {
         return coins;
     }

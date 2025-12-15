@@ -82,4 +82,22 @@ public class Camera {
         this.x = MathUtils.lerp(this.x, targetCamX, smoothFactor);
         this.y = MathUtils.lerp(this.y, targetCamY, smoothFactor);
     }
+
+    public void clampToMap(double mapWidth, double mapHeight) {
+
+        if (x < 0) x = 0;
+        if (y < 0) y = 0;
+
+        if (x + viewWidth > mapWidth) {
+            x = mapWidth - viewWidth;
+        }
+
+        if (y + viewHeight > mapHeight) {
+            y = mapHeight - viewHeight;
+        }
+
+        // Safety for small maps
+        if (mapWidth < viewWidth) x = 0;
+        if (mapHeight < viewHeight) y = 0;
+    }
 }
