@@ -9,7 +9,9 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class Game extends Application {
 
@@ -23,17 +25,31 @@ public class Game extends Application {
         Scene scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
         root.setStyle("-fx-background-color: #5C94FC;");
 
-        // ================= LEVEL =================
-        List<String> rawLines = List.of(
-                "................................................................................................................",
-                "................................................................................................................",
-                "........C......................E......................C.....................E...............................",
-                "......####..............####..............####..............####..............####..........................",
-                "................................................................................................................",
-                "....P...........................................................................................................",
-                "###############################...............................................###############################"
-        );
+        // ================= LEVELS =================
+        List<List<String>> rawLevels = List.of(
+                // Level 1 – simple intro
+                List.of(
+                        "................................................................................................................",
+                        "................................................................................................................",
+                        "................................................................................................................",
+                        "........C......................E......................C.....................E...............................",
+                        "......####..............####..............####..............####..............####..........................",
+                        "........C......................E......................C.....................E...............................",
+                        "....P...........................................................................................................",
+                        "###############################...............................................###############################"
+                ),
+                // Level 2 – more platforms + coins + enemies
+                List.of(
+                        "................................................................................................................",
+                        "............................................C......................C...........................................",
+                        ".....................####..................E......................E.....................####.................",
+                        "............C.................................................................................................",
+                        "......####..............####........C....................####..............####..............................",
+                        "....P.......................E....................C...........................................................",
+                        "###############################........#########...............###############################"));
 
+        int currentLevelIndex = 0; // change this to try other levels
+        List<String> rawLines = rawLevels.get(currentLevelIndex);
         List<String> lines = normalizeLevelLines(rawLines);
 
         LevelLoader loader = new LevelLoader();
@@ -57,6 +73,10 @@ public class Game extends Application {
         UIManager uiManager = new UIManager(20, 30);
         root.getChildren().add(uiManager.getNode());
 
+        // ================= GAME OVER UI =================
+        GameOverScreen gameOverScreen = new GameOverScreen(WINDOW_WIDTH, WINDOW_HEIGHT);
+        root.getChildren().add(gameOverScreen.getNode());
+
         // ================= INPUT =================
         InputManager input = new InputManager();
         input.setupInput(scene);
@@ -68,10 +88,15 @@ public class Game extends Application {
 
         // ================= MANAGERS =================
         CoinManager coinManager = new CoinManager();
-        coinManager.spawnFrom(level.getCoinSpawns());
-
         EnemyManager enemyManager = new EnemyManager();
-        enemyManager.spawnFrom(level.getEnemySpawns());
+
+        // Light randomness: jitter coin and enemy positions a bit so each run feels different
+        Random rng = new Random();
+        List<double[]> jitteredCoins = jitterSpawns(level.getCoinSpawns(), tileMap, rng, 6, 4);
+        List<double[]> jitteredEnemies = jitterSpawns(level.getEnemySpawns(), tileMap, rng, 4, 0);
+
+        coinManager.spawnFrom(jitteredCoins);
+        enemyManager.spawnFrom(jitteredEnemies);
 
         // ================= WORLD =================
         GameWorld world = new GameWorld(
@@ -82,7 +107,8 @@ public class Game extends Application {
                 uiManager,
                 player,
                 level.getPlayerSpawnX(),
-                level.getPlayerSpawnY()
+                level.getPlayerSpawnY(),
+                gameOverScreen
         );
 
         // ================= LOOP =================
@@ -105,6 +131,33 @@ public class Game extends Application {
         stage.setTitle("Super Mario – Real Game");
         stage.setResizable(false);
         stage.show();
+    }
+
+    private static List<double[]> jitterSpawns(List<double[]> original,
+                                               TileMap tileMap,
+                                               Random rng,
+                                               double maxOffsetX,
+                                               double maxOffsetY) {
+        List<double[]> result = new ArrayList<>();
+        if (original == null) return result;
+
+        int worldWidth = tileMap.getWidthInPixels();
+
+        for (double[] pos : original) {
+            if (pos == null || pos.length < 2) continue;
+
+            double x = pos[0];
+            double y = pos[1];
+
+            double dx = (rng.nextDouble() * 2 - 1) * maxOffsetX; // [-max,max]
+            double dy = (rng.nextDouble() * 2 - 1) * maxOffsetY;
+
+            double nx = Math.max(0, Math.min(worldWidth - TileMap.TILE_SIZE, x + dx));
+            double ny = Math.max(0, y + dy);
+
+            result.add(new double[]{nx, ny});
+        }
+        return result;
     }
 
     private static List<String> normalizeLevelLines(List<String> raw) {

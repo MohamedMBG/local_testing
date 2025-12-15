@@ -65,6 +65,11 @@ public class GameLoop extends AnimationTimer {
         // avoid huge dt if debugger/lag
         if (dt > 0.05) dt = 0.05;
 
+        // Stop the game loop updates if game is over
+        if (world != null && world.isGameOver()) {
+            return;
+        }
+
         // ========= INPUT =========
         if (inputManager.isLeftPressed()) player.moveLeft();
         else if (inputManager.isRightPressed()) player.moveRight();

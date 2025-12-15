@@ -15,8 +15,8 @@ public class Player {
     // -------------------------
     private double x;
     private double y;
-    private final double width = 40;
-    private final double height = 40;
+    private final double width = 36;   // slightly narrower
+    private final double height = 36;  // slightly shorter to "lower" collisions
 
     // -------------------------
     // Physics
@@ -29,9 +29,9 @@ public class Player {
     // -------------------------
     // Tunable constants (feel)
     // -------------------------
-    private static final double MOVE_SPEED = 220;     // px/s
-    private static final double GRAVITY = 1200;       // px/s²
-    private static final double JUMP_FORCE = -520;    // px/s
+    private static final double MOVE_SPEED = 280;     // faster
+    private static final double GRAVITY = 1100;       // a bit lighter fall
+    private static final double JUMP_FORCE = -620;    // higher jump
 
     // -------------------------
     // Constructor

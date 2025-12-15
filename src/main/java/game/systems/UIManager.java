@@ -40,18 +40,41 @@ public class UIManager {
         scoreText.setFont(font);
         scoreText.setFill(Color.WHITE);
         scoreText.setEffect(shadow);
+        scoreText.setStroke(Color.rgb(0, 0, 0, 0.35));
+        scoreText.setStrokeWidth(0.7);
 
-        coinsText = new Text("COINS  0");
+        coinsText = new Text("x  0");
         coinsText.setFont(font);
-        coinsText.setFill(Color.GOLD);
+        coinsText.setFill(Color.WHITE);
         coinsText.setEffect(shadow);
+        coinsText.setStroke(Color.rgb(0, 0, 0, 0.35));
+        coinsText.setStrokeWidth(0.7);
 
         // Hearts (lives)
         heartsBox = new HBox(6);
         heartsBox.setAlignment(Pos.CENTER_LEFT);
         rebuildHearts();
 
-        VBox left = new VBox(6, scoreText, coinsText);
+        // Small coin icon next to the coins counter
+        Region coinIcon = new Region();
+        coinIcon.setPrefSize(18, 18);
+        coinIcon.setBackground(new Background(new BackgroundFill(
+                Color.web("#FFCA28"),
+                new CornerRadii(9),
+                Insets.EMPTY
+        )));
+        coinIcon.setBorder(new Border(new BorderStroke(
+                Color.web("#D68600"),
+                BorderStrokeStyle.SOLID,
+                new CornerRadii(9),
+                new BorderWidths(1.5)
+        )));
+        coinIcon.setEffect(new DropShadow(2, Color.rgb(0, 0, 0, 0.6)));
+
+        HBox coinsRow = new HBox(6, coinIcon, coinsText);
+        coinsRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox left = new VBox(6, scoreText, coinsRow);
         left.setAlignment(Pos.CENTER_LEFT);
 
         HBox row = new HBox(18, left, heartsBox);

@@ -9,13 +9,14 @@ public class Physics {
                 .intersects(ground.getRectangle().getBoundsInParent())) {
 
             double top = ground.getY();
+            // Place player exactly on top of the ground pane
             player.setPlayerY(top - player.getHeight());
             player.setVelocityY(0);
             player.setOnGround(true);
         }
     }
 
-    // Call this instead of your old one
+    // Main physics entry point
     public static void moveAndCollide(Player p, TileMap map, double dt) {
         // Apply gravity first
         p.applyGravity(dt);
@@ -84,6 +85,7 @@ public class Physics {
             for (int tx = leftTile; tx <= rightTile; tx++) {
                 if (map.isSolidTile(tx, bottomTile)) {
                     double tileTop = bottomTile * TileMap.TILE_SIZE;
+                    // Place feet exactly on top of the tile, not inside it
                     p.setPlayerY(tileTop - h);
                     p.setVelocityY(0);
                     p.setOnGround(true);

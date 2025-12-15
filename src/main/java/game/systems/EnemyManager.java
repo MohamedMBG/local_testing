@@ -2,6 +2,7 @@ package game.systems;
 
 import game.core.Player;
 import javafx.scene.canvas.GraphicsContext;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,6 +18,12 @@ public class EnemyManager {
 
     public boolean update(double dt, Player player, TileMap map) {
         for (Enemy e : enemies) {
+            // Make enemy move towards the player on X
+            double dir = Math.signum(player.getPlayerX() - e.getX());
+            if (dir != 0) {
+                e.setVelocityX(dir * 70); // slightly faster than player
+            }
+
             e.update(dt, map);
 
             if (e.checkPlayerCollision(
