@@ -7,6 +7,9 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
@@ -30,23 +33,26 @@ public class Game extends Application {
                 // Level 1 – simple intro
                 List.of(
                         "................................................................................................................",
+                        "............................................C......................C...........................................",
+                        ".....................####..................E......................E.....................####.................",
+                        "............C.................................................................................................",
+                        "......####..............####..............####..............####..............####..............................",
+                        "........C......................E......................C.....................E...............................",
+                        "....P....S.......................................................................................................",
+                        "###############################........#########...............###############################"
+                ),
+                // Level 2 – more platforms + coins + enemies
+
+
+                List.of("................................................................................................................",
                         "................................................................................................................",
                         "................................................................................................................",
                         "........C......................E......................C.....................E...............................",
                         "......####..............####..............####..............####..............####..........................",
                         "........C......................E......................C.....................E...............................",
-                        "....P...........................................................................................................",
+                        "....P....S.......................................................................................................",
                         "###############################...............................................###############################"
-                ),
-                // Level 2 – more platforms + coins + enemies
-                List.of(
-                        "................................................................................................................",
-                        "............................................C......................C...........................................",
-                        ".....................####..................E......................E.....................####.................",
-                        "............C.................................................................................................",
-                        "......####..............####........C....................####..............####..............................",
-                        "....P.......................E....................C...........................................................",
-                        "###############################........#########...............###############################"));
+                        ));
 
         int currentLevelIndex = 0; // change this to try other levels
         List<String> rawLines = rawLevels.get(currentLevelIndex);
@@ -89,6 +95,7 @@ public class Game extends Application {
         // ================= MANAGERS =================
         CoinManager coinManager = new CoinManager();
         EnemyManager enemyManager = new EnemyManager();
+        SpikeManager spikeManager = new SpikeManager();
 
         // Light randomness: jitter coin and enemy positions a bit so each run feels different
         Random rng = new Random();
@@ -97,6 +104,36 @@ public class Game extends Application {
 
         coinManager.spawnFrom(jitteredCoins);
         enemyManager.spawnFrom(jitteredEnemies);
+        spikeManager.spawnFrom(level.getSpikeSpawns());
+
+        // Create JavaFX nodes for spikes so they are visible in the world layer
+        for (double[] sp : level.getSpikeSpawns()) {
+            if (sp == null || sp.length < 2) continue;
+            double sx = sp[0];
+            double sy = sp[1] + TileMap.TILE_SIZE - Spike.SIZE;
+
+            // base
+            Rectangle base = new Rectangle(sx + 4, sy + Spike.SIZE - 6, Spike.SIZE - 8, 6);
+            base.setFill(Color.web("#3E2723"));
+
+            // triangle
+            Polygon poly = new Polygon(
+                    sx + Spike.SIZE / 2.0, sy + 4,
+                    sx + 2, sy + Spike.SIZE - 6,
+                    sx + Spike.SIZE - 2, sy + Spike.SIZE - 6
+            );
+            poly.setFill(Color.web("#D32F2F"));
+            poly.setStroke(Color.web("#5D0E0E"));
+            poly.setStrokeWidth(1.5);
+
+            worldLayer.getChildren().addAll(base, poly);
+        }
+
+        // Bring the world layer to front (so any JavaFX nodes like spikes are visible above the canvas)
+        worldLayer.toFront();
+
+        // Debug: print spike positions so we can verify they were spawned
+        System.out.println("Spawned spikes: " + level.getSpikeSpawns().size());
 
         // ================= WORLD =================
         GameWorld world = new GameWorld(
@@ -104,6 +141,7 @@ public class Game extends Application {
                 camera,
                 coinManager,
                 enemyManager,
+                spikeManager,
                 uiManager,
                 player,
                 level.getPlayerSpawnX(),

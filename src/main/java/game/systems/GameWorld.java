@@ -10,6 +10,7 @@ public class GameWorld {
     private final Camera camera;
     private final CoinManager coinManager;
     private final EnemyManager enemyManager;
+    private final SpikeManager spikeManager;
     private final UIManager uiManager;
     private final Player player;
     private final GameOverScreen gameOverScreen;
@@ -32,6 +33,7 @@ public class GameWorld {
             Camera camera,
             CoinManager coinManager,
             EnemyManager enemyManager,
+            SpikeManager spikeManager,
             UIManager uiManager,
             Player player,
             double spawnX,
@@ -42,6 +44,7 @@ public class GameWorld {
         this.camera = camera;
         this.coinManager = coinManager;
         this.enemyManager = enemyManager;
+        this.spikeManager = spikeManager;
         this.uiManager = uiManager;
         this.player = player;
         this.spawnX = spawnX;
@@ -90,6 +93,17 @@ public class GameWorld {
             loseLife();
         }
 
+        // ===== Spikes =====
+        boolean playerTouchedSpike = spikeManager.checkPlayerCollision(
+                player.getPlayerX(),
+                player.getPlayerY(),
+                player.getWidth(),
+                player.getHeight()
+        );
+        if (playerTouchedSpike) {
+            loseLife();
+        }
+
         // ===== Level end (goal) =====
         if (player.getPlayerX() + player.getWidth() >= goalX) {
             // For now just log; here you would trigger loading the next level
@@ -115,9 +129,22 @@ public class GameWorld {
         // ---- 2) Draw collectibles and enemies on top of tiles ----
         coinManager.render(gc, camera);
         enemyManager.render(gc, camera);
+        spikeManager.render(gc, camera);
 
         // ---- 3) Draw goal flag ----
         renderGoal(gc);
+
+        // Debug overlay: show number of spikes
+        gc.setFill(Color.WHITE);
+        gc.fillText("Spikes: " + spikeManager.getCount(), 10, 20);
+
+        // Extra debug markers for spikes (canvas overlay) - bright red squares
+        gc.setFill(Color.RED);
+        for (double[] sp : spikeManager.getPositions()) {
+            double sx = sp[0] - camera.getOffsetX();
+            double sy = sp[1] - camera.getOffsetY();
+            gc.fillRect(sx + 4, sy + 4, 24, 12);
+        }
     }
 
     // -------------------------------------------------

@@ -6,4 +6,6 @@ module com.example.bb_mario {
 
     opens com.example.bb_mario to javafx.fxml;
     exports game.core;
+    exports game.systems;
+    exports game.utils;
 }

@@ -31,14 +31,8 @@ public class EnemyManager {
                     player.getPlayerY(),
                     player.getWidth(),
                     player.getHeight())) {
-
-                // Jump kill logic
-                if (player.getVelocityY() > 0) {
-                    e.kill();
-                    player.setVelocityY(-400);
-                } else {
-                    return true; // player hit
-                }
+                // Player dies when touching enemies
+                return true;
             }
         }
         return false;

@@ -15,13 +15,15 @@ public class LevelLoader {
         private final List<double[]> coinSpawns;
         private final List<double[]> powerUpSpawns;
         private final List<double[]> enemySpawns;
+        private final List<double[]> spikeSpawns;
 
         public LevelData(TileMap tileMap,
                          double playerSpawnX,
                          double playerSpawnY,
                          List<double[]> coinSpawns,
                          List<double[]> powerUpSpawns,
-                         List<double[]> enemySpawns) {
+                         List<double[]> enemySpawns,
+                         List<double[]> spikeSpawns) {
 
             this.tileMap = tileMap;
             this.playerSpawnX = playerSpawnX;
@@ -29,6 +31,7 @@ public class LevelLoader {
             this.coinSpawns = coinSpawns;
             this.powerUpSpawns = powerUpSpawns;
             this.enemySpawns = enemySpawns;
+            this.spikeSpawns = spikeSpawns;
         }
 
         public TileMap getTileMap() {
@@ -55,6 +58,10 @@ public class LevelLoader {
         public List<double[]> getEnemySpawns() {
             return Collections.unmodifiableList(enemySpawns);
         }
+
+        public List<double[]> getSpikeSpawns() {
+            return Collections.unmodifiableList(spikeSpawns);
+        }
     }
 
     /**
@@ -65,6 +72,7 @@ public class LevelLoader {
      *  'C' -> coin spawn
      *  'U' -> power-up spawn
      *  'E' -> enemy spawn
+     *  'S' -> spike spawn
      *
      * All lines must have the same length.
      */
@@ -92,6 +100,7 @@ public class LevelLoader {
         List<double[]> coinSpawns = new ArrayList<>();
         List<double[]> powerUpSpawns = new ArrayList<>();
         List<double[]> enemySpawns = new ArrayList<>();
+        List<double[]> spikeSpawns = new ArrayList<>();
 
         for (int y = 0; y < height; y++) {
             String line = lines.get(y);
@@ -111,6 +120,7 @@ public class LevelLoader {
                     case 'C' -> coinSpawns.add(new double[]{worldX, worldY});
                     case 'U' -> powerUpSpawns.add(new double[]{worldX, worldY});
                     case 'E' -> enemySpawns.add(new double[]{worldX, worldY});
+                    case 'S' -> spikeSpawns.add(new double[]{worldX, worldY});
                     default -> {
                         // handled by TileMap (e.g. '#', '.', ' ')
                     }
@@ -122,6 +132,6 @@ public class LevelLoader {
             throw new IllegalStateException("No player spawn 'P' found in level lines.");
         }
 
-        return new LevelData(tileMap, playerSpawnX, playerSpawnY, coinSpawns, powerUpSpawns, enemySpawns);
+        return new LevelData(tileMap, playerSpawnX, playerSpawnY, coinSpawns, powerUpSpawns, enemySpawns, spikeSpawns);
     }
 }
