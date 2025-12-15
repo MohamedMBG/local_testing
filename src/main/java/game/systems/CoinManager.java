@@ -41,6 +41,4 @@ public class CoinManager {
     public List<Coin> getCoins() {
         return coins;
     }
-
-
 }
