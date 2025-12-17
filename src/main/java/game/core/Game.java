@@ -12,38 +12,38 @@ import javafx.stage.Stage;
  */
 public class Game extends Application {
 
-    // Dimensions de la fenêtre
+
     private static final int WINDOW_WIDTH = 800;
     private static final int WINDOW_HEIGHT = 600;
 
-    // Le Pane principal qui contiendra tous les éléments du jeu
+
     private Pane root;
 
-    // A2 - Game Objects
+
     private Ground ground;
     private Player player;
 
-    // A8 - HUD
+
     private HUD hud;
 
-    // A3 - Game Loop
+
     private GameLoop gameLoop;
 
-    // A4 - Input Manager
+
     private InputManager inputManager;
 
     @Override
     public void start(Stage primaryStage) {
-        // A1 - Créer le Pane principal (root)
+
         root = new Pane();
         root.setStyle("-fx-background-color: #5C94FC;"); // Bleu ciel comme Mario
 
-        // A1 - Créer la Scene avec le root et les dimensions
+
         Scene scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-        // ========== A2 : Initialize Game Objects ==========
 
-        // Créer le sol en bas de l'écran
+
+
         ground = new Ground(0, WINDOW_HEIGHT - 100, WINDOW_WIDTH, 100);
         root.getChildren().add(ground.getRectangle());
 
@@ -53,12 +53,12 @@ public class Game extends Application {
 
         // ===================================================
 
-        // ========== A8 : Basic HUD (Score) ==========
+
         hud = new HUD();
         root.getChildren().add(hud.getScoreText());
         // ============================================
 
-        // ========== A4 : Input System ==========
+
         inputManager = new InputManager();
         inputManager.setupInput(scene);
         // =======================================
@@ -68,7 +68,7 @@ public class Game extends Application {
         gameLoop.start(); // Démarrer la boucle de jeu
         // ====================================
 
-        // A1 - Configurer le Stage (la fenêtre)
+
         primaryStage.setTitle("Super Mario Game - By Monssef");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
