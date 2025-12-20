@@ -114,7 +114,7 @@ public class Game extends Application {
         root.getChildren().add(uiManager.getNode());
 
         // ================= GAME OVER SCREEN =================
-        gameOverScreen = new GameOverScreen(WINDOW_WIDTH, WINDOW_HEIGHT);
+        gameOverScreen = new GameOverScreen(WINDOW_WIDTH, WINDOW_HEIGHT, this::restartCurrentLevel);
         root.getChildren().add(gameOverScreen.getNode());
 
         // ================= LEVEL COMPLETE SCREEN =================

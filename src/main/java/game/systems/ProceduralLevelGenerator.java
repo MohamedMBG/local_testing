@@ -12,6 +12,7 @@ import java.util.Random;
  *  '#' solid tile (collision)
  *  'P' player spawn
  *  'C' coin
+ *  'U' power-up
  *  'E' enemy
  *  'S' spike
  */
@@ -104,6 +105,10 @@ public class ProceduralLevelGenerator {
         // Coins and enemies: place above solid tiles
         double coinChance = clamp(0.22 - (difficulty - 1) * 0.03, 0.06, 0.25);   // fewer coins as difficulty increases
         double enemyChance = clamp(0.03 + (difficulty - 1) * 0.02, 0.03, 0.20);  // more enemies as difficulty increases
+        double powerUpChance = clamp(0.05 + (3 - difficulty) * 0.01, 0.03, 0.12); // common on easy levels, rarer on hard ones
+
+        boolean powerUpPlaced = false;
+        List<int[]> powerUpCandidates = new ArrayList<>();
 
         for (int y = 1; y < heightTiles; y++) {
             for (int x = 1; x < widthTiles - 1; x++) {
@@ -117,16 +122,26 @@ public class ProceduralLevelGenerator {
 
                     // only place if above is empty
                     if (g[aboveY][x] == '.') {
+                        powerUpCandidates.add(new int[]{x, aboveY});
                         // Decide coin vs enemy
                         double r = rng.nextDouble();
                         if (r < enemyChance) {
                             g[aboveY][x] = 'E';
-                        } else if (r < enemyChance + coinChance) {
+                        } else if (r < enemyChance + powerUpChance) {
+                            g[aboveY][x] = 'U';
+                            powerUpPlaced = true;
+                        } else if (r < enemyChance + powerUpChance + coinChance) {
                             g[aboveY][x] = 'C';
                         }
                     }
                 }
             }
+        }
+
+        // Guarantee at least one power-up spawn per level so the mechanic exists
+        if (!powerUpPlaced && !powerUpCandidates.isEmpty()) {
+            int[] spot = powerUpCandidates.get(rng.nextInt(powerUpCandidates.size()));
+            g[spot[1]][spot[0]] = 'U';
         }
 
         // Make sure we didn't block the player tile
