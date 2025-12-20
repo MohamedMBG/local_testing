@@ -9,6 +9,7 @@ public class GameWorld {
     private final TileMap tileMap;
     private final Camera camera;
     private final CoinManager coinManager;
+    private final PowerUpManager powerUpManager;
     private final EnemyManager enemyManager;
     private final SpikeManager spikeManager;
     private final UIManager uiManager;
@@ -28,10 +29,14 @@ public class GameWorld {
     // Simple level end goal position (near the right side of the map)
     private final double goalX;
 
+    // Temporary invincibility timer from star power-ups
+    private double invincibilityTimer = 0;
+
     public GameWorld(
             TileMap tileMap,
             Camera camera,
             CoinManager coinManager,
+            PowerUpManager powerUpManager,
             EnemyManager enemyManager,
             SpikeManager spikeManager,
             UIManager uiManager,
@@ -43,6 +48,7 @@ public class GameWorld {
         this.tileMap = tileMap;
         this.camera = camera;
         this.coinManager = coinManager;
+        this.powerUpManager = powerUpManager;
         this.enemyManager = enemyManager;
         this.spikeManager = spikeManager;
         this.uiManager = uiManager;
@@ -62,6 +68,10 @@ public class GameWorld {
         if (gameOver) {
             // Stop updating once game is over
             return;
+        }
+
+        if (invincibilityTimer > 0) {
+            invincibilityTimer = Math.max(0, invincibilityTimer - dt);
         }
 
         // ===== Camera follow player (center) =====
@@ -89,7 +99,7 @@ public class GameWorld {
 
         // ===== Enemies =====
         boolean playerHit = enemyManager.update(dt, player, tileMap);
-        if (playerHit) {
+        if (playerHit && !isInvincible()) {
             loseLife();
         }
 
@@ -100,8 +110,19 @@ public class GameWorld {
                 player.getWidth(),
                 player.getHeight()
         );
-        if (playerTouchedSpike) {
+        if (playerTouchedSpike && !isInvincible()) {
             loseLife();
+        }
+
+        if (powerUpManager != null) {
+            for (PowerUpType collected : powerUpManager.updateAndGetCollected(
+                    player.getPlayerX(),
+                    player.getPlayerY(),
+                    player.getWidth(),
+                    player.getHeight()
+            )) {
+                applyPowerUp(collected);
+            }
         }
 
         // ===== Level end (goal) =====
@@ -128,6 +149,9 @@ public class GameWorld {
 
         // ---- 2) Draw collectibles and enemies on top of tiles ----
         coinManager.render(gc, camera);
+        if (powerUpManager != null) {
+            powerUpManager.render(gc, camera);
+        }
         enemyManager.render(gc, camera);
         spikeManager.render(gc, camera);
 
@@ -144,6 +168,11 @@ public class GameWorld {
             double sx = sp[0] - camera.getOffsetX();
             double sy = sp[1] - camera.getOffsetY();
             gc.fillRect(sx + 4, sy + 4, 24, 12);
+        }
+
+        if (invincibilityTimer > 0) {
+            gc.setFill(Color.YELLOW);
+            gc.fillText("Star: " + String.format("%.1fs", invincibilityTimer), 10, 40);
         }
     }
 
@@ -173,6 +202,19 @@ public class GameWorld {
 
     public boolean isGameOver() {
         return gameOver;
+    }
+
+    private void applyPowerUp(PowerUpType type) {
+        switch (type) {
+            case MUSHROOM -> score += 100;
+            case FLOWER -> score += 150;
+            case STAR -> invincibilityTimer = 6.0;
+            case LIFE -> lives++;
+        }
+    }
+
+    private boolean isInvincible() {
+        return invincibilityTimer > 0;
     }
 
     // -------------------------------------------------
