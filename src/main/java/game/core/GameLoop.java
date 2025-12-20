@@ -19,6 +19,7 @@ public class GameLoop extends AnimationTimer {
     private final GameWorld world;
     private final GraphicsContext gc;
     private final TileMap tileMap;
+    private final Runnable restartCallback;
 
     // NEW: for camera syncing with JavaFX nodes
     private final Camera camera;
@@ -35,7 +36,8 @@ public class GameLoop extends AnimationTimer {
                     GraphicsContext gc,
                     TileMap tileMap,
                     Camera camera,
-                    Group worldLayer) {
+                    Group worldLayer,
+                    Runnable restartCallback) {
 
         this.player = player;
         this.ground = ground;
@@ -49,6 +51,7 @@ public class GameLoop extends AnimationTimer {
 
         this.camera = camera;
         this.worldLayer = worldLayer;
+        this.restartCallback = restartCallback;
     }
 
     @Override
@@ -65,8 +68,12 @@ public class GameLoop extends AnimationTimer {
         // avoid huge dt if debugger/lag
         if (dt > 0.05) dt = 0.05;
 
-        // Stop the game loop updates if game is over
+        // Stop the game loop updates if game is over, but listen for restart
         if (world != null && world.isGameOver()) {
+            if (inputManager.isRestartPressed() && restartCallback != null) {
+                restartCallback.run();
+                inputManager.resetRestart();
+            }
             return;
         }
 

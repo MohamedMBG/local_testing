@@ -14,6 +14,9 @@ public class InputManager {
     private boolean leftPressed = false;
     private boolean rightPressed = false;
     private boolean jumpPressed = false;
+    private boolean restartPressed = false;
+
+    private boolean inputEnabled = true;
 
     /**
      * Initialise les événements clavier sur la scène
@@ -23,6 +26,8 @@ public class InputManager {
 
         // A4 - Quand une touche est pressée
         scene.setOnKeyPressed(event -> {
+            if (!inputEnabled) return;
+
             KeyCode code = event.getCode();
 
             if (code == KeyCode.LEFT || code == KeyCode.Q) {
@@ -34,10 +39,15 @@ public class InputManager {
             if (code == KeyCode.SPACE || code == KeyCode.UP || code == KeyCode.Z) {
                 jumpPressed = true;
             }
+            if (code == KeyCode.R) {
+                restartPressed = true;
+            }
         });
 
         // A4 - Quand une touche est relâchée
         scene.setOnKeyReleased(event -> {
+            if (!inputEnabled) return;
+
             KeyCode code = event.getCode();
 
             if (code == KeyCode.LEFT || code == KeyCode.Q) {
@@ -48,6 +58,9 @@ public class InputManager {
             }
             if (code == KeyCode.SPACE || code == KeyCode.UP || code == KeyCode.Z) {
                 jumpPressed = false;
+            }
+            if (code == KeyCode.R) {
+                restartPressed = false;
             }
         });
     }
@@ -65,8 +78,30 @@ public class InputManager {
         return jumpPressed;
     }
 
+    public boolean isRestartPressed() {
+        return restartPressed;
+    }
+
     // Reset jump (utilisé après avoir sauté)
     public void resetJump() {
         jumpPressed = false;
+    }
+
+    public void resetRestart() {
+        restartPressed = false;
+    }
+
+    public void resetAllInputs() {
+        leftPressed = false;
+        rightPressed = false;
+        jumpPressed = false;
+        restartPressed = false;
+    }
+
+    public void setInputEnabled(boolean enabled) {
+        this.inputEnabled = enabled;
+        if (!enabled) {
+            resetAllInputs();
+        }
     }
 }
