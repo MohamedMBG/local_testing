@@ -115,13 +115,13 @@ public class GameWorld {
         }
 
         if (powerUpManager != null) {
-            for (PowerUpType collected : powerUpManager.updateAndGetCollected(
+            for (PowerUpType collected2 : powerUpManager.updateAndGetCollected(
                     player.getPlayerX(),
                     player.getPlayerY(),
                     player.getWidth(),
                     player.getHeight()
             )) {
-                applyPowerUp(collected);
+                applyPowerUp(collected2);
             }
         }
 

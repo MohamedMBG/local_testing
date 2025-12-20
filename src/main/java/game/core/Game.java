@@ -21,7 +21,7 @@ import java.util.Random;
 public class Game extends Application {
 
     private static final int WINDOW_WIDTH = 1200;
-    private static final int WINDOW_HEIGHT = 650;
+    private static final int WINDOW_HEIGHT = 630;
 
     // Class fields to manage state
     private Pane root;
