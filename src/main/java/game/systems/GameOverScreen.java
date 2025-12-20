@@ -44,4 +44,8 @@ public class GameOverScreen {
     public void show() {
         node.setVisible(true);
     }
+
+    public void hide() {
+        node.setVisible(false);
+    }
 }

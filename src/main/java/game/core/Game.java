@@ -1,6 +1,7 @@
 package game.core;
 
 import game.systems.*;
+import javafx.animation.FadeTransition;
 import javafx.application.Application;
 import javafx.scene.Group;
 import javafx.scene.Scene;
@@ -11,6 +12,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,16 +25,21 @@ public class Game extends Application {
 
     // Class fields to manage state
     private Pane root;
+    private Scene scene;
     private List<List<String>> rawLevels;
     private int currentLevelIndex = 0;
     private GameLoop activeLoop;
     private Stage primaryStage;
+    private InputManager inputManager;
+    private GameOverScreen gameOverScreen;
+    private Rectangle fadeOverlay;
+    private boolean restarting = false;
 
     @Override
     public void start(Stage stage) {
         this.primaryStage = stage;
         root = new Pane();
-        Scene scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
+        scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
         root.setStyle("-fx-background-color: #5C94FC;");
 
         // ================= LEVELS GENERATION =================
@@ -46,8 +53,11 @@ public class Game extends Application {
             rawLevels.add(ProceduralLevelGenerator.generate(lvl, mapWidthTiles, mapHeightTiles, seed + lvl * 999L));
         }
 
+        inputManager = new InputManager();
+        inputManager.setupInput(scene);
+
         // Start the first level
-        startLevel(currentLevelIndex, scene);
+        startLevel(currentLevelIndex);
 
         stage.setScene(scene);
         stage.setTitle("Super Mario – Real Game");
@@ -55,7 +65,7 @@ public class Game extends Application {
         stage.show();
     }
 
-    private void startLevel(int levelIndex, Scene scene) {
+    private void startLevel(int levelIndex) {
         // 1. Cleanup previous level
         if (activeLoop != null) {
             activeLoop.stop(); // Stop the timer
@@ -104,25 +114,27 @@ public class Game extends Application {
         root.getChildren().add(uiManager.getNode());
 
         // ================= GAME OVER SCREEN =================
-        GameOverScreen gameOverScreen = new GameOverScreen(WINDOW_WIDTH, WINDOW_HEIGHT);
+        gameOverScreen = new GameOverScreen(WINDOW_WIDTH, WINDOW_HEIGHT);
         root.getChildren().add(gameOverScreen.getNode());
 
         // ================= LEVEL COMPLETE SCREEN =================
         // Pass a lambda to handle what happens when "Next Level" is clicked
         LevelCompleteScreen completeScreen = new LevelCompleteScreen(WINDOW_WIDTH, WINDOW_HEIGHT, () -> {
             currentLevelIndex++;
-            startLevel(currentLevelIndex, scene);
+            startLevel(currentLevelIndex);
         });
         root.getChildren().add(completeScreen.getNode());
 
         // ================= INPUT =================
-        InputManager input = new InputManager();
-        input.setupInput(scene);
+        inputManager.resetAllInputs();
+        inputManager.setInputEnabled(true);
 
         // ================= CANVAS =================
         Canvas canvas = new Canvas(WINDOW_WIDTH, WINDOW_HEIGHT);
         GraphicsContext gc = canvas.getGraphicsContext2D();
         root.getChildren().add(canvas);
+
+        createFadeOverlay();
 
         // ================= MANAGERS =================
         CoinManager coinManager = new CoinManager();
@@ -162,8 +174,9 @@ public class Game extends Application {
 
         // ================= LOOP =================
         activeLoop = new GameLoop(
-                player, ground, input, WINDOW_WIDTH, WINDOW_HEIGHT,
-                world, gc, tileMap, camera, worldLayer
+                player, ground, inputManager, WINDOW_WIDTH, WINDOW_HEIGHT,
+                world, gc, tileMap, camera, worldLayer,
+                this::restartCurrentLevel
         ) {
             // Override update to check for win condition every frame
             @Override
@@ -182,7 +195,62 @@ public class Game extends Application {
         activeLoop.start();
     }
 
+    private void restartCurrentLevel() {
+        if (restarting) return;
+        restarting = true;
+
+        if (gameOverScreen != null) {
+            gameOverScreen.hide();
+        }
+
+        inputManager.resetAllInputs();
+        inputManager.setInputEnabled(false);
+
+        Rectangle overlayBefore = fadeOverlay;
+        if (overlayBefore != null) {
+            overlayBefore.setMouseTransparent(false);
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(300), overlayBefore);
+            fadeIn.setFromValue(0);
+            fadeIn.setToValue(1);
+            fadeIn.setOnFinished(event -> {
+                startLevel(currentLevelIndex);
+
+                Rectangle overlayAfter = fadeOverlay;
+                if (overlayAfter != null) {
+                    overlayAfter.setOpacity(1);
+                    overlayAfter.setMouseTransparent(false);
+                    FadeTransition fadeOut = new FadeTransition(Duration.millis(300), overlayAfter);
+                    fadeOut.setFromValue(1);
+                    fadeOut.setToValue(0);
+                    fadeOut.setOnFinished(e -> {
+                        inputManager.resetAllInputs();
+                        inputManager.setInputEnabled(true);
+                        overlayAfter.setMouseTransparent(true);
+                        restarting = false;
+                    });
+                    fadeOut.play();
+                } else {
+                    inputManager.setInputEnabled(true);
+                    restarting = false;
+                }
+            });
+            fadeIn.play();
+        } else {
+            startLevel(currentLevelIndex);
+            inputManager.setInputEnabled(true);
+            restarting = false;
+        }
+    }
+
     // ... (Keep your existing helper methods: jitterSpawns, normalizeLevelLines, main) ...
+
+    private void createFadeOverlay() {
+        fadeOverlay = new Rectangle(WINDOW_WIDTH, WINDOW_HEIGHT, Color.BLACK);
+        fadeOverlay.setOpacity(0);
+        fadeOverlay.setMouseTransparent(true);
+        root.getChildren().add(fadeOverlay);
+        fadeOverlay.toFront();
+    }
 
     private static List<double[]> jitterSpawns(List<double[]> original, TileMap tileMap, Random rng, double maxOffsetX, double maxOffsetY) {
         // ... (Keep existing code) ...
