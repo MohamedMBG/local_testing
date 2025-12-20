@@ -138,14 +138,17 @@ public class Game extends Application {
 
         // ================= MANAGERS =================
         CoinManager coinManager = new CoinManager();
+        PowerUpManager powerUpManager = new PowerUpManager();
         EnemyManager enemyManager = new EnemyManager();
         SpikeManager spikeManager = new SpikeManager();
 
         Random rng = new Random();
         List<double[]> jitteredCoins = jitterSpawns(level.getCoinSpawns(), tileMap, rng, 6, 4);
+        List<double[]> jitteredPowerUps = jitterSpawns(level.getPowerUpSpawns(), tileMap, rng, 4, 4);
         List<double[]> jitteredEnemies = jitterSpawns(level.getEnemySpawns(), tileMap, rng, 4, 0);
 
         coinManager.spawnFrom(jitteredCoins);
+        spawnPowerUps(powerUpManager, jitteredPowerUps, rng);
         enemyManager.spawnFrom(jitteredEnemies);
         spikeManager.spawnFrom(level.getSpikeSpawns());
 
@@ -167,7 +170,7 @@ public class Game extends Application {
 
         // ================= WORLD =================
         GameWorld world = new GameWorld(
-                tileMap, camera, coinManager, enemyManager, spikeManager,
+                tileMap, camera, coinManager, powerUpManager, enemyManager, spikeManager,
                 uiManager, player, level.getPlayerSpawnX(), level.getPlayerSpawnY(),
                 gameOverScreen
         );
@@ -267,6 +270,18 @@ public class Game extends Application {
             result.add(new double[]{nx, ny});
         }
         return result;
+    }
+
+    private void spawnPowerUps(PowerUpManager manager, List<double[]> positions, Random rng) {
+        if (manager == null || positions == null) return;
+
+        PowerUpType[] types = PowerUpType.values();
+        for (double[] pos : positions) {
+            if (pos == null || pos.length < 2) continue;
+
+            PowerUpType type = types[rng.nextInt(types.length)];
+            manager.spawn(pos[0], pos[1], 24, 24, type);
+        }
     }
 
     private static List<String> normalizeLevelLines(List<String> raw) {

@@ -2,7 +2,7 @@ package game.systems;
 
 public class PowerUp extends Collectible{
 
-    PowerUpType type;
+    private final PowerUpType type;
 
     public PowerUp(double x, double y, double width, double height, PowerUpType type) {
         super(x, y, width, height);

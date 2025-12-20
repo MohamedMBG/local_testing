@@ -1,6 +1,7 @@
 package game.systems;
 
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -23,8 +24,12 @@ public class PowerUpManager {
             double x = pos[0];
             double y = pos[1];
 
-            powerUps.add(new PowerUp(x, y, powerUpWidth, powerUpHeight, type));
+            spawn(x, y, powerUpWidth, powerUpHeight, type);
         }
+    }
+
+    public void spawn(double x, double y, double powerUpWidth, double powerUpHeight, PowerUpType type) {
+        powerUps.add(new PowerUp(x, y, powerUpWidth, powerUpHeight, type));
     }
 
     /**
@@ -54,12 +59,24 @@ public class PowerUpManager {
     // ✅ Manager renders what it owns
     public void render(GraphicsContext gc, Camera camera) {
         for (PowerUp p : powerUps) {
-            double screenX = p.getX() - camera.getX();
-            double screenY = p.getY() - camera.getY();
+            double screenX = p.getX() - camera.getOffsetX();
+            double screenY = p.getY() - camera.getOffsetY();
 
-            // Placeholder draw (replace with sprite later)
-            gc.fillRect(screenX, screenY, p.getWidth(), p.getHeight());
+            gc.setFill(colorFor(p.getType()));
+            gc.fillOval(screenX, screenY, p.getWidth(), p.getHeight());
+            gc.setStroke(Color.BLACK);
+            gc.setLineWidth(1.5);
+            gc.strokeOval(screenX, screenY, p.getWidth(), p.getHeight());
         }
+    }
+
+    private Color colorFor(PowerUpType type) {
+        return switch (type) {
+            case MUSHROOM -> Color.web("#FF7043");
+            case FLOWER -> Color.web("#FFEB3B");
+            case STAR -> Color.web("#81D4FA");
+            case LIFE -> Color.web("#C62828");
+        };
     }
 
     public List<PowerUp> getPowerUps() {
