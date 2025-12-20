@@ -92,7 +92,7 @@ public class Game extends Application {
         Ground ground = new Ground(0, WINDOW_HEIGHT - 80, tileMap.getWidthInPixels(), 80);
         worldLayer.getChildren().add(ground.getRectangle());
 
-        double groundY = WINDOW_HEIGHT - 80 - 50;
+        double groundY = WINDOW_HEIGHT - 100 - 50;
 
 // Use the level's X spawn, but force our calculated ground Y
         Player player = new Player(level.getPlayerSpawnX(), groundY);
