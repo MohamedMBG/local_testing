@@ -23,8 +23,8 @@ public class Player {
     // -------------------------
     private double x;
     private double y;
-    private final double width = 48;   // bigger and clearer silhouette
-    private final double height = 48;  // taller box for more readable collisions
+    private final double width = 64;   // bigger and clearer silhouette
+    private final double height = 64;  // taller box for more readable collisions
 
     // -------------------------
     // Physics
