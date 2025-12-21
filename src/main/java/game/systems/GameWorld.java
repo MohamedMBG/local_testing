@@ -31,6 +31,8 @@ public class GameWorld {
 
     // Temporary invincibility timer from star power-ups
     private double invincibilityTimer = 0;
+    // Short shield granted by any collected power-up
+    private double shieldTimer = 0;
 
     public GameWorld(
             TileMap tileMap,
@@ -72,6 +74,10 @@ public class GameWorld {
 
         if (invincibilityTimer > 0) {
             invincibilityTimer = Math.max(0, invincibilityTimer - dt);
+        }
+
+        if (shieldTimer > 0) {
+            shieldTimer = Math.max(0, shieldTimer - dt);
         }
 
         // ===== Camera follow player (center) =====
@@ -174,6 +180,11 @@ public class GameWorld {
             gc.setFill(Color.YELLOW);
             gc.fillText("Star: " + String.format("%.1fs", invincibilityTimer), 10, 40);
         }
+
+        if (shieldTimer > 0) {
+            gc.setFill(Color.LIGHTBLUE);
+            gc.fillText("Shield: " + String.format("%.1fs", shieldTimer), 10, 60);
+        }
     }
 
     // -------------------------------------------------
@@ -205,6 +216,9 @@ public class GameWorld {
     }
 
     private void applyPowerUp(PowerUpType type) {
+        // Any power-up grants a brief 2 second shield to protect the player
+        shieldTimer = Math.max(shieldTimer, 2.0);
+
         switch (type) {
             case MUSHROOM -> score += 100;
             case FLOWER -> score += 150;
@@ -214,7 +228,7 @@ public class GameWorld {
     }
 
     private boolean isInvincible() {
-        return invincibilityTimer > 0;
+        return invincibilityTimer > 0 || shieldTimer > 0;
     }
 
     // -------------------------------------------------
