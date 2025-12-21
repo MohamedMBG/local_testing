@@ -123,7 +123,7 @@ public class Game extends Application {
         worldLayer.getChildren().add(player.getNode());
 
         // ================= UI =================
-        uiManager = new UIManager(20, 30);
+        uiManager = new UIManager(20, 30, activeTheme);
         uiManager.setBestScore(highestScore);
         uiManager.setThemeName(activeTheme.getDisplayName());
         root.getChildren().add(uiManager.getNode());

@@ -4,6 +4,9 @@ import game.core.Player;
 import game.utils.Theme;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 import java.util.function.Consumer;
 
 public class GameWorld {
@@ -151,6 +154,7 @@ public class GameWorld {
         // ===== UI =====
         uiManager.setAll(score, coins, lives);
         uiManager.setThemeName(theme.getDisplayName());
+        uiManager.setTheme(theme);
         if (scoreListener != null) {
             scoreListener.accept(score);
         }
@@ -162,8 +166,7 @@ public class GameWorld {
     public void render(GraphicsContext gc) {
         if (gc == null) return;
 
-        // Clear the whole camera view
-        gc.clearRect(0, 0, camera.getViewWidth(), camera.getViewHeight());
+        renderBackdrop(gc);
 
         // ---- 1) Draw solid tiles so collisions / obstacles are visible ----
         renderTiles(gc);
@@ -178,23 +181,6 @@ public class GameWorld {
 
         // ---- 3) Draw goal flag ----
         renderGoal(gc);
-
-        // Debug overlay: show number of spikes
-        gc.setFill(Color.WHITE);
-        gc.fillText("Spikes: " + spikeManager.getCount(), 10, 20);
-
-        // Extra debug markers for spikes (canvas overlay) - bright hazard color
-        gc.setFill(theme.getSpikeFill());
-        for (double[] sp : spikeManager.getPositions()) {
-            double sx = sp[0] - camera.getOffsetX();
-            double sy = sp[1] - camera.getOffsetY();
-            gc.fillRect(sx + 4, sy + 4, 24, 12);
-        }
-
-        if (invincibilityTimer > 0) {
-            gc.setFill(Color.YELLOW);
-            gc.fillText("Star: " + String.format("%.1fs", invincibilityTimer), 10, 40);
-        }
     }
 
     // -------------------------------------------------
@@ -339,5 +325,41 @@ public class GameWorld {
     public void setTheme(Theme theme) {
         this.theme = theme;
         this.goalFlagColor = theme.getTileHighlight();
+    }
+
+    private void renderBackdrop(GraphicsContext gc) {
+        double viewWidth = camera.getViewWidth();
+        double viewHeight = camera.getViewHeight();
+
+        LinearGradient gradient = new LinearGradient(
+                0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
+                new Stop(0, theme.getBackground()),
+                new Stop(1, theme.getBackgroundBottom())
+        );
+        gc.setFill(gradient);
+        gc.fillRect(0, 0, viewWidth, viewHeight);
+
+        // Distant glow behind the level to make silhouettes pop
+        gc.setFill(theme.getBackgroundBottom().interpolate(theme.getGround(), 0.35));
+        gc.fillRect(0, viewHeight * 0.72, viewWidth, viewHeight * 0.3);
+
+        // Soft parallax streaks to convey motion
+        double parallax = (camera.getOffsetX() / 3.5) % viewWidth;
+        gc.setStroke(theme.getTileAccent().deriveColor(0, 1, 1, 0.22));
+        gc.setLineWidth(2.2);
+        for (int i = 0; i < 7; i++) {
+            double x = (i * 210) - parallax;
+            double y = viewHeight * 0.32 + Math.sin((x + camera.getOffsetX()) * 0.004) * 12;
+            gc.strokeLine(x, y, x + 150, y + 18);
+        }
+
+        // Ambient sparkles that match the active theme
+        gc.setFill(theme.getPowerUpGlow().deriveColor(0, 1, 1, 0.16));
+        double spread = viewWidth / 6.0;
+        for (int i = 0; i < 6; i++) {
+            double x = (i * spread * 0.95) - (camera.getOffsetX() * 0.12 % spread) + 40;
+            double y = (viewHeight * 0.18) + (i % 2 == 0 ? 10 : -10);
+            gc.fillOval(x, y, 18, 18);
+        }
     }
 }
