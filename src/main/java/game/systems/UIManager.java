@@ -30,11 +30,16 @@ public class UIManager {
     public UIManager(double x, double y) {
 
         // Panel background
-        Rectangle bg = new Rectangle(320, 104);
-        bg.setArcWidth(16);
-        bg.setArcHeight(16);
-        bg.setFill(Color.rgb(0, 0, 0, 0.35));
-        bg.setStroke(Color.rgb(255, 255, 255, 0.35));
+        Rectangle bg = new Rectangle(360, 116);
+        bg.setArcWidth(18);
+        bg.setArcHeight(18);
+        bg.setFill(new javafx.scene.paint.LinearGradient(
+                0, 0, 1, 1, true, javafx.scene.paint.CycleMethod.NO_CYCLE,
+                new javafx.scene.paint.Stop(0, Color.rgb(27, 34, 54, 0.85)),
+                new javafx.scene.paint.Stop(1, Color.rgb(54, 81, 105, 0.9))
+        ));
+        bg.setStroke(Color.rgb(255, 255, 255, 0.25));
+        bg.setStrokeWidth(1.5);
 
         // Text style
         Font font = Font.font("Arial", FontWeight.EXTRA_BOLD, 18);
@@ -42,28 +47,28 @@ public class UIManager {
 
         scoreText = new Text("SCORE  0");
         scoreText.setFont(font);
-        scoreText.setFill(Color.WHITE);
+        scoreText.setFill(Color.rgb(230, 242, 255));
         scoreText.setEffect(shadow);
         scoreText.setStroke(Color.rgb(0, 0, 0, 0.35));
         scoreText.setStrokeWidth(0.7);
 
         coinsText = new Text("x  0");
         coinsText.setFont(font);
-        coinsText.setFill(Color.WHITE);
+        coinsText.setFill(Color.rgb(230, 242, 255));
         coinsText.setEffect(shadow);
         coinsText.setStroke(Color.rgb(0, 0, 0, 0.35));
         coinsText.setStrokeWidth(0.7);
 
         bestText = new Text("BEST  0");
         bestText.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 16));
-        bestText.setFill(Color.LIGHTGOLDENRODYELLOW);
+        bestText.setFill(Color.rgb(255, 230, 179));
         bestText.setEffect(shadow);
         bestText.setStroke(Color.rgb(0, 0, 0, 0.35));
         bestText.setStrokeWidth(0.7);
 
         themeText = new Text("Theme: Summer");
         themeText.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        themeText.setFill(Color.WHITE);
+        themeText.setFill(Color.rgb(210, 222, 238));
         themeText.setEffect(shadow);
         themeText.setStroke(Color.rgb(0, 0, 0, 0.25));
         themeText.setStrokeWidth(0.5);

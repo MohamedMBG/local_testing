@@ -73,6 +73,8 @@ public class Game extends Application {
         stage.setTitle("Super Mario – Real Game");
         stage.setResizable(false);
         stage.show();
+
+        refocusScene();
     }
 
     private void startLevel(int levelIndex) {
@@ -218,6 +220,8 @@ public class Game extends Application {
         attachDashboardButton();
         root.getChildren().add(dashboardScreen.getNode());
         dashboardScreen.hide();
+
+        refocusScene();
     }
 
     private void restartCurrentLevel() {
@@ -291,6 +295,7 @@ public class Game extends Application {
         if (activeLoop != null) {
             activeLoop.stop();
         }
+        inputManager.setInputEnabled(false);
         if (dashboardScreen != null) {
             dashboardScreen.setHighScore(highestScore);
             dashboardScreen.show();
@@ -307,6 +312,9 @@ public class Game extends Application {
         if (activeLoop != null) {
             activeLoop.start();
         }
+        inputManager.resetAllInputs();
+        inputManager.setInputEnabled(true);
+        refocusScene();
     }
 
     private void onThemePicked(Theme theme) {
@@ -446,5 +454,11 @@ public class Game extends Application {
         newLevel.addAll(rawLines); // Add the actual level below
 
         return newLevel;
+    }
+
+    private void refocusScene() {
+        if (scene != null && scene.getRoot() != null) {
+            scene.getRoot().requestFocus();
+        }
     }
 }
