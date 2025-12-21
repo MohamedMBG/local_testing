@@ -243,10 +243,11 @@ public class GameWorld {
     private void renderTiles(GraphicsContext gc) {
         final int tileSize = TileMap.TILE_SIZE;
 
-        // Simple colors with a bit of depth
-        Color base = Color.web("#D97B32");     // warm orange/brown
-        Color topHighlight = Color.web("#F4B15A");
-        Color outline = Color.web("#6B3B16");
+        // Wooden branch palette so solid tiles resemble natural obstacles
+        Color base = Color.web("#7A4F1D");        // dark bark
+        Color highlight = Color.web("#B27C4D");   // sun‑kissed wood
+        Color shadow = Color.web("#5A3712");      // deeper crevices
+        Color accent = Color.web("#E3C177");      // lighter sapwood accent
 
         int tilesX = tileMap.getWidthInTiles();
         int tilesY = tileMap.getHeightInTiles();
@@ -266,18 +267,32 @@ public class GameWorld {
                 double screenX = worldX - camera.getOffsetX();
                 double screenY = worldY - camera.getOffsetY();
 
-                // Base block
+                // Background bark block
                 gc.setFill(base);
-                gc.fillRoundRect(screenX, screenY, tileSize, tileSize, 6, 6);
+                gc.fillRoundRect(screenX, screenY, tileSize, tileSize, 10, 10);
 
-                // Top highlight strip
-                gc.setFill(topHighlight);
-                gc.fillRoundRect(screenX + 2, screenY + 2, tileSize - 4, tileSize / 3.0, 6, 6);
+                // Main branch running across the tile
+                double branchHeight = tileSize * 0.35;
+                double branchY = screenY + tileSize * 0.4;
+                gc.setFill(highlight);
+                gc.fillRoundRect(screenX - 2, branchY, tileSize + 4, branchHeight, 18, 18);
 
-                // Outline
-                gc.setStroke(outline);
-                gc.setLineWidth(1.5);
-                gc.strokeRoundRect(screenX, screenY, tileSize, tileSize, 6, 6);
+                // Deeper bark shadows to add depth
+                gc.setFill(shadow);
+                gc.fillRoundRect(screenX - 2, branchY + branchHeight * 0.45, tileSize + 4, branchHeight * 0.35, 18, 18);
+
+                // Little twigs so collisions look like branches sticking out
+                gc.setStroke(accent);
+                gc.setLineWidth(4);
+                gc.strokeLine(screenX + tileSize * 0.3, branchY + branchHeight * 0.25,
+                        screenX + tileSize * 0.15, branchY - tileSize * 0.15);
+                gc.strokeLine(screenX + tileSize * 0.65, branchY + branchHeight * 0.35,
+                        screenX + tileSize * 0.9, branchY - tileSize * 0.1);
+
+                // Knots to break up the surface
+                gc.setFill(accent);
+                gc.fillOval(screenX + tileSize * 0.55, branchY + branchHeight * 0.2, tileSize * 0.18, tileSize * 0.18);
+                gc.fillOval(screenX + tileSize * 0.25, branchY + branchHeight * 0.5, tileSize * 0.14, tileSize * 0.14);
             }
         }
     }

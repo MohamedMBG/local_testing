@@ -9,7 +9,8 @@ public class Ground {
 
     public Ground(double x, double y, double w, double h) {
         rectangle = new Rectangle(x, y, w, h);
-        rectangle.setFill(Color.BROWN);
+        // Soft desert sand tone to match the new environment theme
+        rectangle.setFill(Color.web("#D8C18F"));
     }
 
     public Rectangle getRectangle() { return rectangle; }
