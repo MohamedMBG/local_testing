@@ -21,7 +21,7 @@ import java.util.Random;
 
 public class Game extends Application {
 
-    private static final int WINDOW_WIDTH = 1200;
+    private static final int WINDOW_WIDTH = 1250;
     private static final int WINDOW_HEIGHT = 630;
 
     // Class fields to manage state
@@ -114,7 +114,7 @@ public class Game extends Application {
         ground.applyTheme(activeTheme.getGround());
         worldLayer.getChildren().add(ground.getRectangle());
 
-        double groundY = WINDOW_HEIGHT - 100 - 50;
+        double groundY = WINDOW_HEIGHT - 140 - 50;
 
 // Use the level's X spawn, but force our calculated ground Y
         Player player = new Player(level.getPlayerSpawnX(), groundY);
