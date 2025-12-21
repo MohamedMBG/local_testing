@@ -1,12 +1,14 @@
 package game.core;
 
 import game.systems.*;
+import game.utils.Theme;
 import javafx.animation.FadeTransition;
 import javafx.application.Application;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Button;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
@@ -34,13 +36,19 @@ public class Game extends Application {
     private GameOverScreen gameOverScreen;
     private Rectangle fadeOverlay;
     private boolean restarting = false;
+    private DashboardScreen dashboardScreen;
+    private Theme activeTheme = Theme.SUMMER;
+    private int highestScore = 0;
+    private Button dashboardButton;
+    private boolean levelBootstrapped = false;
+    private UIManager uiManager;
 
     @Override
     public void start(Stage stage) {
         this.primaryStage = stage;
         root = new Pane();
         scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
-        root.setStyle("-fx-background-color: #5C94FC;");
+        root.setStyle("-fx-background-color: " + activeTheme.toCss() + ";");
 
         // ================= LEVELS GENERATION =================
         long seed = System.currentTimeMillis();
@@ -56,8 +64,10 @@ public class Game extends Application {
         inputManager = new InputManager();
         inputManager.setupInput(scene);
 
-        // Start the first level
-        startLevel(currentLevelIndex);
+        // Dashboard lets players choose a theme and see their best score before the run starts
+        dashboardScreen = new DashboardScreen(WINDOW_WIDTH, WINDOW_HEIGHT, this::onThemePicked, this::launchFromDashboard);
+        root.getChildren().add(dashboardScreen.getNode());
+        dashboardScreen.show();
 
         stage.setScene(scene);
         stage.setTitle("Super Mario – Real Game");
@@ -100,17 +110,21 @@ public class Game extends Application {
         root.getChildren().add(worldLayer);
 
         Ground ground = new Ground(0, WINDOW_HEIGHT - 80, tileMap.getWidthInPixels(), 80);
+        ground.applyTheme(activeTheme.getGround());
         worldLayer.getChildren().add(ground.getRectangle());
 
         double groundY = WINDOW_HEIGHT - 100 - 50;
 
 // Use the level's X spawn, but force our calculated ground Y
         Player player = new Player(level.getPlayerSpawnX(), groundY);
+        player.applyTheme(activeTheme);
 
         worldLayer.getChildren().add(player.getNode());
 
         // ================= UI =================
-        UIManager uiManager = new UIManager(20, 30);
+        uiManager = new UIManager(20, 30);
+        uiManager.setBestScore(highestScore);
+        uiManager.setThemeName(activeTheme.getDisplayName());
         root.getChildren().add(uiManager.getNode());
 
         // ================= GAME OVER SCREEN =================
@@ -176,7 +190,7 @@ public class Game extends Application {
         GameWorld world = new GameWorld(
                 tileMap, camera, coinManager, powerUpManager, enemyManager, spikeManager,
                 uiManager, player, level.getPlayerSpawnX(), level.getPlayerSpawnY(),
-                gameOverScreen
+                gameOverScreen, activeTheme, this::onScoreChanged
         );
 
         // ================= LOOP =================
@@ -200,6 +214,10 @@ public class Game extends Application {
         };
 
         activeLoop.start();
+        levelBootstrapped = true;
+        attachDashboardButton();
+        root.getChildren().add(dashboardScreen.getNode());
+        dashboardScreen.hide();
     }
 
     private void restartCurrentLevel() {
@@ -257,6 +275,62 @@ public class Game extends Application {
         fadeOverlay.setMouseTransparent(true);
         root.getChildren().add(fadeOverlay);
         fadeOverlay.toFront();
+    }
+
+    private void attachDashboardButton() {
+        dashboardButton = new Button("Dashboard");
+        dashboardButton.setStyle("-fx-background-color: rgba(255,255,255,0.85); -fx-background-radius: 10; -fx-padding: 6 12; -fx-border-color: rgba(0,0,0,0.25); -fx-border-radius: 10;");
+        dashboardButton.setLayoutX(WINDOW_WIDTH - 150);
+        dashboardButton.setLayoutY(20);
+        dashboardButton.setOnAction(e -> pauseIntoDashboard());
+        root.getChildren().add(dashboardButton);
+        dashboardButton.toFront();
+    }
+
+    private void pauseIntoDashboard() {
+        if (activeLoop != null) {
+            activeLoop.stop();
+        }
+        if (dashboardScreen != null) {
+            dashboardScreen.setHighScore(highestScore);
+            dashboardScreen.show();
+        }
+    }
+
+    private void launchFromDashboard() {
+        if (!levelBootstrapped) {
+            startLevel(currentLevelIndex);
+        }
+        if (dashboardScreen != null) {
+            dashboardScreen.hide();
+        }
+        if (activeLoop != null) {
+            activeLoop.start();
+        }
+    }
+
+    private void onThemePicked(Theme theme) {
+        this.activeTheme = theme;
+        root.setStyle("-fx-background-color: " + theme.toCss() + ";");
+        if (dashboardScreen != null) {
+            dashboardScreen.setHighScore(highestScore);
+        }
+        // reapply to current level if it exists
+        if (activeLoop != null) {
+            startLevel(currentLevelIndex);
+        }
+    }
+
+    private void onScoreChanged(int score) {
+        if (score > highestScore) {
+            highestScore = score;
+            if (dashboardScreen != null) {
+                dashboardScreen.setHighScore(highestScore);
+            }
+            if (uiManager != null) {
+                uiManager.setBestScore(highestScore);
+            }
+        }
     }
 
     private static List<double[]> jitterSpawns(

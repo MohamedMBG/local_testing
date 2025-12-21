@@ -15,4 +15,8 @@ public class Ground {
 
     public Rectangle getRectangle() { return rectangle; }
     public double getY() { return rectangle.getY(); }
+
+    public void applyTheme(Color color) {
+        rectangle.setFill(color);
+    }
 }

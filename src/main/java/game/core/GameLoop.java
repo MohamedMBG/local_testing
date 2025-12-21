@@ -115,6 +115,8 @@ public class GameLoop extends AnimationTimer {
             );
         }
 
+        player.tick(dt);
+
         // ========= UPDATE WORLD (coins/powerups/score) =========
         if (world != null) world.update(dt);
 

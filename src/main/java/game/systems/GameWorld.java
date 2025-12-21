@@ -1,8 +1,10 @@
 package game.systems;
 
 import game.core.Player;
+import game.utils.Theme;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import java.util.function.Consumer;
 
 public class GameWorld {
 
@@ -15,6 +17,8 @@ public class GameWorld {
     private final UIManager uiManager;
     private final Player player;
     private final GameOverScreen gameOverScreen;
+    private Theme theme;
+    private Color goalFlagColor;
 
     // ---- Game state ----
     private int score = 0;
@@ -31,6 +35,7 @@ public class GameWorld {
 
     // Temporary invincibility timer from star power-ups
     private double invincibilityTimer = 0;
+    private final Consumer<Integer> scoreListener;
 
     public GameWorld(
             TileMap tileMap,
@@ -43,7 +48,9 @@ public class GameWorld {
             Player player,
             double spawnX,
             double spawnY,
-            GameOverScreen gameOverScreen
+            GameOverScreen gameOverScreen,
+            Theme theme,
+            Consumer<Integer> scoreListener
     ) {
         this.tileMap = tileMap;
         this.camera = camera;
@@ -56,6 +63,9 @@ public class GameWorld {
         this.spawnX = spawnX;
         this.spawnY = spawnY;
         this.gameOverScreen = gameOverScreen;
+        this.theme = theme;
+        this.goalFlagColor = theme.getTileHighlight();
+        this.scoreListener = scoreListener;
 
         // Place goal a bit before the very end of the map
         this.goalX = tileMap.getWidthInPixels() - 2 * TileMap.TILE_SIZE;
@@ -133,6 +143,10 @@ public class GameWorld {
 
         // ===== UI =====
         uiManager.setAll(score, coins, lives);
+        uiManager.setThemeName(theme.getDisplayName());
+        if (scoreListener != null) {
+            scoreListener.accept(score);
+        }
     }
 
     // -------------------------------------------------
@@ -243,11 +257,10 @@ public class GameWorld {
     private void renderTiles(GraphicsContext gc) {
         final int tileSize = TileMap.TILE_SIZE;
 
-        // Wooden branch palette so solid tiles resemble natural obstacles
-        Color base = Color.web("#7A4F1D");        // dark bark
-        Color highlight = Color.web("#B27C4D");   // sun‑kissed wood
-        Color shadow = Color.web("#5A3712");      // deeper crevices
-        Color accent = Color.web("#E3C177");      // lighter sapwood accent
+        Color base = theme.getTileBase();
+        Color highlight = theme.getTileHighlight();
+        Color shadow = theme.getTileShadow();
+        Color accent = theme.getTileAccent();
 
         int tilesX = tileMap.getWidthInTiles();
         int tilesY = tileMap.getHeightInTiles();
@@ -312,5 +325,12 @@ public class GameWorld {
                 new double[]{baseY - 6 * TileMap.TILE_SIZE, baseY - 6 * TileMap.TILE_SIZE + 12, baseY - 6 * TileMap.TILE_SIZE + 24},
                 3
         );
+        gc.setFill(goalFlagColor);
+        gc.fillOval(poleX - 4, baseY - 6 * TileMap.TILE_SIZE - 6, 12, 12);
+    }
+
+    public void setTheme(Theme theme) {
+        this.theme = theme;
+        this.goalFlagColor = theme.getTileHighlight();
     }
 }
