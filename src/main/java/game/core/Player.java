@@ -1,10 +1,11 @@
 package game.core;
 
+import game.utils.Theme;
 import javafx.scene.Group;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 
 public class Player {
 
@@ -37,9 +38,19 @@ public class Player {
     // -------------------------
     // Tunable constants (feel)
     // -------------------------
-    private static final double MOVE_SPEED = 280;     // faster
-    private static final double GRAVITY = 1100;       // a bit lighter fall
-    private static final double JUMP_FORCE = -620;    // higher jump
+    private static final double BASE_MOVE_SPEED = 280;     // faster
+    private static final double BASE_GRAVITY = 1100;       // a bit lighter fall
+    private static final double BASE_JUMP_FORCE = -620;    // higher jump
+
+    private double moveSpeed = BASE_MOVE_SPEED;
+    private double gravity = BASE_GRAVITY;
+    private double jumpForce = BASE_JUMP_FORCE;
+
+    // Jump leniency / buffering
+    private static final double COYOTE_TIME = 0.14;
+    private static final double JUMP_BUFFER = 0.16;
+    private double coyoteTimer = 0;
+    private double jumpBufferTimer = 0;
 
     // -------------------------
     // Constructor
@@ -76,19 +87,14 @@ public class Player {
     // Update (called every frame)
     // -------------------------
     public void update(double dt) {
-        x += velocityX * dt;
-        y += velocityY * dt;
-
         // Animation logic: switch sprites based on state
         if (!onGround) {
             imageView.setImage(jumpingImage);
-        } else if (velocityX != 0) {
+        } else if (Math.abs(velocityX) > 10) {
             imageView.setImage(runningImage);
-            // Flip image for direction
             imageView.setScaleX(velocityX > 0 ? 1 : -1);
         } else {
             imageView.setImage(standingImage);
-            // Reset scale when standing
             imageView.setScaleX(1);
         }
 
@@ -99,11 +105,11 @@ public class Player {
     // Movement input
     // -------------------------
     public void moveLeft() {
-        velocityX = -MOVE_SPEED;
+        velocityX = -moveSpeed;
     }
 
     public void moveRight() {
-        velocityX = MOVE_SPEED;
+        velocityX = moveSpeed;
     }
 
     public void stopX() {
@@ -111,10 +117,8 @@ public class Player {
     }
 
     public void jump() {
-        if (onGround) {
-            velocityY = JUMP_FORCE;
-            onGround = false;
-        }
+        jumpBufferTimer = JUMP_BUFFER;
+        tryConsumeBufferedJump();
     }
 
     // -------------------------
@@ -171,7 +175,41 @@ public class Player {
     }
 
     public void applyGravity(double dt) {
-        velocityY += GRAVITY * dt;
+        velocityY += gravity * dt;
+    }
+
+    public void tick(double dt) {
+        if (onGround) {
+            coyoteTimer = COYOTE_TIME;
+        } else {
+            coyoteTimer = Math.max(0, coyoteTimer - dt);
+        }
+
+        if (jumpBufferTimer > 0) {
+            jumpBufferTimer = Math.max(0, jumpBufferTimer - dt);
+        }
+
+        if (Math.abs(velocityX) < 10 && onGround) {
+            velocityX = 0;
+        }
+
+        tryConsumeBufferedJump();
+        update(dt);
+    }
+
+    public void applyTheme(Theme theme) {
+        moveSpeed = BASE_MOVE_SPEED * theme.getMoveScale();
+        gravity = BASE_GRAVITY * theme.getGravityScale();
+        jumpForce = BASE_JUMP_FORCE * theme.getJumpScale();
+    }
+
+    private void tryConsumeBufferedJump() {
+        if (jumpBufferTimer > 0 && (onGround || coyoteTimer > 0)) {
+            velocityY = jumpForce;
+            onGround = false;
+            coyoteTimer = 0;
+            jumpBufferTimer = 0;
+        }
     }
 
     public double getPlayerX() {

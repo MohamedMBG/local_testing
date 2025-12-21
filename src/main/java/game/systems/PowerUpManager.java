@@ -64,11 +64,21 @@ public class PowerUpManager {
             double screenX = p.getX() - camera.getOffsetX();
             double screenY = p.getY() - camera.getOffsetY();
 
-            gc.setFill(colorFor(p.getType()));
+            Color base = colorFor(p.getType());
+            Color rim = base.deriveColor(0, 1, 0.8, 1);
+            Color glow = base.deriveColor(0, 1, 1.3, 0.6);
+
+            gc.setFill(glow);
+            gc.fillOval(screenX - 4, screenY - 4, p.getWidth() + 8, p.getHeight() + 8);
+
+            gc.setFill(base);
             gc.fillOval(screenX, screenY, p.getWidth(), p.getHeight());
-            gc.setStroke(Color.BLACK);
-            gc.setLineWidth(1.5);
-            gc.strokeOval(screenX, screenY, p.getWidth(), p.getHeight());
+            gc.setStroke(rim);
+            gc.setLineWidth(2);
+            gc.strokeOval(screenX + 2, screenY + 2, p.getWidth() - 4, p.getHeight() - 4);
+
+            gc.setFill(Color.WHITE);
+            gc.fillText(symbolFor(p.getType()), screenX + p.getWidth() / 2.7, screenY + p.getHeight() / 1.8);
         }
     }
 
@@ -78,6 +88,15 @@ public class PowerUpManager {
             case FLOWER -> Color.web("#FFEB3B");
             case STAR -> Color.web("#81D4FA");
             case LIFE -> Color.web("#C62828");
+        };
+    }
+
+    private String symbolFor(PowerUpType type) {
+        return switch (type) {
+            case MUSHROOM -> "M";
+            case FLOWER -> "F";
+            case STAR -> "✦";
+            case LIFE -> "+";
         };
     }
 

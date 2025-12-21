@@ -17,16 +17,20 @@ public class UIManager {
 
     private final Text scoreText;
     private final Text coinsText;
+    private final Text bestText;
+    private final Text themeText;
     private final HBox heartsBox;
 
     private int score = 0;
     private int coins = 0;
     private int lives = 3;
+    private int bestScore = 0;
+    private String activeTheme = "";
 
     public UIManager(double x, double y) {
 
         // Panel background
-        Rectangle bg = new Rectangle(240, 78);
+        Rectangle bg = new Rectangle(320, 104);
         bg.setArcWidth(16);
         bg.setArcHeight(16);
         bg.setFill(Color.rgb(0, 0, 0, 0.35));
@@ -49,6 +53,20 @@ public class UIManager {
         coinsText.setEffect(shadow);
         coinsText.setStroke(Color.rgb(0, 0, 0, 0.35));
         coinsText.setStrokeWidth(0.7);
+
+        bestText = new Text("BEST  0");
+        bestText.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 16));
+        bestText.setFill(Color.LIGHTGOLDENRODYELLOW);
+        bestText.setEffect(shadow);
+        bestText.setStroke(Color.rgb(0, 0, 0, 0.35));
+        bestText.setStrokeWidth(0.7);
+
+        themeText = new Text("Theme: Summer");
+        themeText.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        themeText.setFill(Color.WHITE);
+        themeText.setEffect(shadow);
+        themeText.setStroke(Color.rgb(0, 0, 0, 0.25));
+        themeText.setStrokeWidth(0.5);
 
         // Hearts (lives)
         heartsBox = new HBox(6);
@@ -74,7 +92,7 @@ public class UIManager {
         HBox coinsRow = new HBox(6, coinIcon, coinsText);
         coinsRow.setAlignment(Pos.CENTER_LEFT);
 
-        VBox left = new VBox(6, scoreText, coinsRow);
+        VBox left = new VBox(4, scoreText, coinsRow, bestText, themeText);
         left.setAlignment(Pos.CENTER_LEFT);
 
         HBox row = new HBox(18, left, heartsBox);
@@ -127,11 +145,23 @@ public class UIManager {
         rebuildHearts();
     }
 
+    public void setBestScore(int bestScore) {
+        this.bestScore = Math.max(0, bestScore);
+        bestText.setText("BEST  " + this.bestScore);
+    }
+
+    public void setThemeName(String theme) {
+        this.activeTheme = theme;
+        themeText.setText("Theme: " + theme);
+    }
+
     // If you want one call from GameWorld:
     public void setAll(int score, int coins, int lives) {
         setScore(score);
         setCoins(coins);
         setLives(lives);
+        setBestScore(bestScore);
+        setThemeName(activeTheme);
     }
 
     public Group getNode() {
