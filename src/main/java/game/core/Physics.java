@@ -2,173 +2,119 @@ package game.core;
 
 import game.systems.TileMap;
 
-/**
- * Tile-based physics with forgiving collisions.
- *
- * Key improvements vs. "sticky" collisions:
- * - Uses a tiny skin (epsilon) to avoid getting stuck inside tiles.
- * - Zeroes the collided axis velocity (X on wall hit, Y on ceiling/ground hit).
- * - Adds a small "step-up" when running into a 1-tile edge while grounded (smooth movement).
- */
 public class Physics {
 
-    // Small "skin" so we don't stay exactly inside a tile boundary
-    private static final double COLLISION_EPSILON = 0.5;
+    // A tiny gap to keep floating point errors from gluing us to the wall
+    private static final double SKIN = 0.01;
 
-    // How many pixels we can step up when hitting a wall while grounded
-    private static final double STEP_HEIGHT = 6.0;
+    // Max fall speed (Terminal Velocity) to prevent falling through floors
+    private static final double MAX_FALL_SPEED = 1500.0; // High value for pixels
 
-    public static void checkGroundCollision(Player player, Ground ground) {
-        if (player.getRectangle().getBoundsInParent()
-                .intersects(ground.getRectangle().getBoundsInParent())) {
+    // Physics simulation step size (prevents tunneling through walls)
+    private static final double MAX_STEP_SIZE = TileMap.TILE_SIZE / 2.0;
 
-            double top = ground.getY();
-            player.setPlayerY(top - player.getHeight());
-            player.setVelocityY(0);
-            player.setOnGround(true);
-        }
-    }
-
-    // Main physics entry point
+    /**
+     * Main physics entry point.
+     * Handles Gravity, Velocity, and Map Collisions.
+     */
     public static void moveAndCollide(Player p, TileMap map, double dt) {
         if (p == null || map == null) return;
 
-        // Remember grounded state from previous frame (needed for step-up)
-        boolean groundedBefore = p.isOnGround();
-
-        // Apply gravity first
+        // 1. Apply Gravity
+        // NOTE: Ensure p.applyGravity() uses a value like 1200.0, NOT 9.8!
         p.applyGravity(dt);
 
-        // --- Move X then collide on X ---
-        double newX = p.getPlayerX() + p.getVelocityX() * dt;
-        p.setPlayerX(newX);
-        collideX(p, map, groundedBefore);
+        // Clamp falling speed so we don't fall through the world
+        if (p.getVelocityY() > MAX_FALL_SPEED) {
+            p.setVelocityY(MAX_FALL_SPEED);
+        }
 
-        // --- Move Y then collide on Y ---
-        double newY = p.getPlayerY() + p.getVelocityY() * dt;
-        p.setPlayerY(newY);
-        collideY(p, map);
+        // 2. Determine sub-steps for safety
+        double totalDx = p.getVelocityX() * dt;
+        double totalDy = p.getVelocityY() * dt;
+
+        // Calculate how many steps we need to be safe
+        double distance = Math.sqrt(totalDx * totalDx + totalDy * totalDy);
+        int steps = (int) Math.ceil(distance / MAX_STEP_SIZE);
+        if (steps <= 0) steps = 1;
+
+        double stepDx = totalDx / steps;
+        double stepDy = totalDy / steps;
+
+        // Reset ground state at the start of the frame
+        p.setOnGround(false);
+
+        // 3. Execute sub-steps
+        for (int i = 0; i < steps; i++) {
+            resolveX(p, map, stepDx);
+            resolveY(p, map, stepDy);
+
+            // If we hit a wall/floor, stop adding velocity for remaining steps
+            if (p.getVelocityX() == 0) stepDx = 0;
+            if (p.getVelocityY() == 0) stepDy = 0;
+        }
     }
 
-    private static void collideX(Player p, TileMap map, boolean groundedBefore) {
-        double x = p.getPlayerX();
-        double y = p.getPlayerY();
-        double w = p.getWidth();
-        double h = p.getHeight();
+    private static void resolveX(Player p, TileMap map, double dx) {
+        p.setPlayerX(p.getPlayerX() + dx);
 
-        int leftTile = (int) Math.floor((x + COLLISION_EPSILON) / TileMap.TILE_SIZE);
-        int rightTile = (int) Math.floor((x + w - COLLISION_EPSILON) / TileMap.TILE_SIZE);
-        int topTile = (int) Math.floor((y + COLLISION_EPSILON) / TileMap.TILE_SIZE);
-        int bottomTile = (int) Math.floor((y + h - COLLISION_EPSILON) / TileMap.TILE_SIZE);
+        int leftTile = getTileIdx(p.getPlayerX() + SKIN);
+        int rightTile = getTileIdx(p.getPlayerX() + p.getWidth() - SKIN);
+        int topTile = getTileIdx(p.getPlayerY() + SKIN);
+        int bottomTile = getTileIdx(p.getPlayerY() + p.getHeight() - SKIN);
 
-        // moving right
-        if (p.getVelocityX() > 0) {
+        // Moving Right
+        if (dx > 0) {
             for (int ty = topTile; ty <= bottomTile; ty++) {
                 if (map.isSolidTile(rightTile, ty)) {
-                    double tileLeft = rightTile * TileMap.TILE_SIZE;
-                    double targetX = tileLeft - w - COLLISION_EPSILON;
-
-                    // Try a small step-up to avoid getting stuck on tiny edges
-                    if (groundedBefore && tryStepUp(p, map, targetX, y)) {
-                        return;
-                    }
-
-                    p.setPlayerX(targetX);
-                    p.setVelocityX(0); // stop pushing into the wall
-                    return;
-                }
-            }
-        }
-        // moving left
-        else if (p.getVelocityX() < 0) {
-            for (int ty = topTile; ty <= bottomTile; ty++) {
-                if (map.isSolidTile(leftTile, ty)) {
-                    double tileRight = (leftTile + 1) * TileMap.TILE_SIZE;
-                    double targetX = tileRight + COLLISION_EPSILON;
-
-                    if (groundedBefore && tryStepUp(p, map, targetX, y)) {
-                        return;
-                    }
-
-                    p.setPlayerX(targetX);
+                    p.setPlayerX((rightTile * TileMap.TILE_SIZE) - p.getWidth() - SKIN);
                     p.setVelocityX(0);
                     return;
                 }
             }
         }
-
-        // Extra: if player is slightly inside a wall (e.g. after spawn/jitter), push out
-        // This helps prevent "frozen" movement when starting overlapped.
-        x = p.getPlayerX();
-        leftTile = (int) Math.floor((x + COLLISION_EPSILON) / TileMap.TILE_SIZE);
-        rightTile = (int) Math.floor((x + w - COLLISION_EPSILON) / TileMap.TILE_SIZE);
-
-        for (int ty = topTile; ty <= bottomTile; ty++) {
-            if (map.isSolidTile(leftTile, ty)) {
-                double tileRight = (leftTile + 1) * TileMap.TILE_SIZE;
-                if (x < tileRight) p.setPlayerX(tileRight + COLLISION_EPSILON);
-            }
-            if (map.isSolidTile(rightTile, ty)) {
-                double tileLeft = rightTile * TileMap.TILE_SIZE;
-                if (x + w > tileLeft) p.setPlayerX(tileLeft - w - COLLISION_EPSILON);
+        // Moving Left
+        else if (dx < 0) {
+            for (int ty = topTile; ty <= bottomTile; ty++) {
+                if (map.isSolidTile(leftTile, ty)) {
+                    p.setPlayerX((leftTile + 1) * TileMap.TILE_SIZE + SKIN);
+                    p.setVelocityX(0);
+                    return;
+                }
             }
         }
     }
 
-    private static boolean tryStepUp(Player p, TileMap map, double targetX, double currentY) {
-        // Save current position
-        double oldX = p.getPlayerX();
-        double oldY = p.getPlayerY();
+    private static void resolveY(Player p, TileMap map, double dy) {
+        p.setPlayerY(p.getPlayerY() + dy);
 
-        // Move to the wall-resolved X, then try stepping up a little
-        p.setPlayerX(targetX);
-        p.setPlayerY(currentY - STEP_HEIGHT);
+        int leftTile = getTileIdx(p.getPlayerX() + SKIN);
+        int rightTile = getTileIdx(p.getPlayerX() + p.getWidth() - SKIN);
+        int topTile = getTileIdx(p.getPlayerY() + SKIN);
+        int bottomTile = getTileIdx(p.getPlayerY() + p.getHeight() - SKIN);
 
-        if (!isColliding(p, map)) {
-            // success; keep stepped position
-            return true;
-        }
-
-        // revert
-        p.setPlayerX(oldX);
-        p.setPlayerY(oldY);
-        return false;
-    }
-
-    private static void collideY(Player p, TileMap map) {
-        double x = p.getPlayerX();
-        double y = p.getPlayerY();
-        double w = p.getWidth();
-        double h = p.getHeight();
-
-        int leftTile = (int) Math.floor((x + COLLISION_EPSILON) / TileMap.TILE_SIZE);
-        int rightTile = (int) Math.floor((x + w - COLLISION_EPSILON) / TileMap.TILE_SIZE);
-        int topTile = (int) Math.floor((y + COLLISION_EPSILON) / TileMap.TILE_SIZE);
-        int bottomTile = (int) Math.floor((y + h - COLLISION_EPSILON) / TileMap.TILE_SIZE);
-
-        p.setOnGround(false);
-
-        // falling or standing
-        if (p.getVelocityY() >= 0) {
+        // Falling / Moving Down / Standing
+        if (dy >= 0) {
             for (int tx = leftTile; tx <= rightTile; tx++) {
                 if (map.isSolidTile(tx, bottomTile)) {
-                    double tileTop = bottomTile * TileMap.TILE_SIZE;
-
-                    // Keep a tiny overlap so the next frame still sees the ground tile
-                    // and avoids a flickering airborne state on flat surfaces.
-                    p.setPlayerY(tileTop - h + COLLISION_EPSILON);
+                    // Snap to top of the block
+                    p.setPlayerY((bottomTile * TileMap.TILE_SIZE) - p.getHeight() - SKIN);
                     p.setVelocityY(0);
-                    p.setOnGround(true);
+                    p.setOnGround(true); // Critical: We found the floor
                     return;
                 }
             }
         }
-        // jumping upward
-        else {
+        // Jumping / Moving Up
+        else if (dy < 0) {
             for (int tx = leftTile; tx <= rightTile; tx++) {
                 if (map.isSolidTile(tx, topTile)) {
-                    double tileBottom = (topTile + 1) * TileMap.TILE_SIZE;
-                    p.setPlayerY(tileBottom + COLLISION_EPSILON);
+                    // Try to slide around the corner first
+                    if (applyCornerCorrection(p, map, tx, topTile, leftTile, rightTile)) {
+                        return;
+                    }
+                    // Hit ceiling
+                    p.setPlayerY((topTile + 1) * TileMap.TILE_SIZE + SKIN);
                     p.setVelocityY(0);
                     return;
                 }
@@ -176,22 +122,68 @@ public class Physics {
         }
     }
 
-    private static boolean isColliding(Player p, TileMap map) {
-        double x = p.getPlayerX();
-        double y = p.getPlayerY();
-        double w = p.getWidth();
-        double h = p.getHeight();
+    /**
+     * Compatibility method for your GameLoop.
+     * Keeps player from falling if they walk off the TileMap onto the "Ground" object.
+     */
+    public static void checkGroundCollision(Player player, Ground ground) {
+        if (ground == null) return;
 
-        int left = (int) Math.floor((x + COLLISION_EPSILON) / TileMap.TILE_SIZE);
-        int right = (int) Math.floor((x + w - COLLISION_EPSILON) / TileMap.TILE_SIZE);
-        int top = (int) Math.floor((y + COLLISION_EPSILON) / TileMap.TILE_SIZE);
-        int bottom = (int) Math.floor((y + h - COLLISION_EPSILON) / TileMap.TILE_SIZE);
+        double pX = player.getPlayerX();
+        double pY = player.getPlayerY();
+        double pW = player.getWidth();
+        double pH = player.getHeight();
 
-        for (int ty = top; ty <= bottom; ty++) {
-            for (int tx = left; tx <= right; tx++) {
-                if (map.isSolidTile(tx, ty)) return true;
+        double gX = ground.getRectangle().getX();
+        double gY = ground.getRectangle().getY();
+        double gW = ground.getRectangle().getWidth();
+        double gH = ground.getRectangle().getHeight();
+
+        // Simple AABB overlap check
+        boolean overlap = pX < gX + gW && pX + pW > gX &&
+                pY < gY + gH && pY + pH > gY;
+
+        // If overlapping and falling down
+        if (overlap && player.getVelocityY() >= 0) {
+            player.setPlayerY(gY - pH);
+            player.setVelocityY(0);
+            player.setOnGround(true);
+        }
+    }
+
+    /**
+     * Nudges the player sideways if they hit the corner of a block with their head,
+     * allowing them to slide up instead of stopping dead.
+     */
+    private static boolean applyCornerCorrection(Player p, TileMap map, int hitTileX, int hitTileY, int leftTile, int rightTile) {
+        double overlapAmount = 10.0; // Pixels of leniency
+        double playerCenterX = p.getPlayerX() + (p.getWidth() / 2.0);
+        double tileCenterX = (hitTileX * TileMap.TILE_SIZE) + (TileMap.TILE_SIZE / 2.0);
+
+        // Hit left corner?
+        if (playerCenterX < tileCenterX) {
+            if (!map.isSolidTile(hitTileX - 1, hitTileY)) { // Check if space to left is open
+                double penetration = (p.getPlayerX() + p.getWidth()) - (hitTileX * TileMap.TILE_SIZE);
+                if (penetration < overlapAmount) {
+                    p.setPlayerX((hitTileX * TileMap.TILE_SIZE) - p.getWidth() - SKIN);
+                    return true;
+                }
+            }
+        }
+        // Hit right corner?
+        else {
+            if (!map.isSolidTile(hitTileX + 1, hitTileY)) { // Check if space to right is open
+                double penetration = ((hitTileX + 1) * TileMap.TILE_SIZE) - p.getPlayerX();
+                if (penetration < overlapAmount) {
+                    p.setPlayerX(((hitTileX + 1) * TileMap.TILE_SIZE) + SKIN);
+                    return true;
+                }
             }
         }
         return false;
+    }
+
+    private static int getTileIdx(double pos) {
+        return (int) Math.floor(pos / TileMap.TILE_SIZE);
     }
 }
