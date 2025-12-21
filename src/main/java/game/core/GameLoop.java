@@ -101,6 +101,8 @@ public class GameLoop extends AnimationTimer {
             player.constrainToBounds(windowWidth);
         }
 
+        player.updateAnimationState();
+
         // ========= CAMERA FOLLOW =========
         if (camera != null && tileMap != null) {
             double px = player.getPlayerX() + player.getWidth() / 2.0;
