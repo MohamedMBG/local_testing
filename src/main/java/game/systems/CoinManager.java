@@ -12,6 +12,8 @@ import java.util.List;
 
 public class CoinManager {
 
+    public static final double DEFAULT_SIZE = 20.0;
+
     private final List<Coin> coins = new ArrayList<>();
 
     // Clears the coins
@@ -21,7 +23,7 @@ public class CoinManager {
 
     // Overloaded method for easier use
     public void spawnFrom(List<double[]> positions) {
-        spawnFrom(positions, 16, 16);  // Default coin size
+        spawnFrom(positions, DEFAULT_SIZE, DEFAULT_SIZE);  // Default coin size
     }
 
     // Spawns coins with specific size

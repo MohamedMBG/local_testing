@@ -9,6 +9,8 @@ import java.util.List;
 
 public class PowerUpManager {
 
+    public static final double DEFAULT_SIZE = 24.0;
+
     private final List<PowerUp> powerUps = new ArrayList<>();
 
     public void remove() {

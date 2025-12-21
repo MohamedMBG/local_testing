@@ -7,7 +7,7 @@ public class Enemy {
 
     private double x, y;
     private double vx = 60;
-    private static final double SIZE = 28;
+    public static final double SIZE = 30;
     private boolean alive = true;
 
     public Enemy(double x, double y) {
