@@ -68,3 +68,7 @@ Commands (from repo root):
 - **Player abilities**: use `PowerUpManager.updateAndGetCollected` to apply effects per `PowerUpType`.
 - **UI**: expand `UIManager` and `HUD` for timers, lives, and power-up indicators.
 
+## Full project documentation
+
+For a complete tour of the runtime, systems, and level format, see [docs/PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md).
+
