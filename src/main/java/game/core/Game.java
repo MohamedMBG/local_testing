@@ -107,7 +107,7 @@ public class Game extends Application {
 // Use the level's X spawn, but force our calculated ground Y
         Player player = new Player(level.getPlayerSpawnX(), groundY);
 
-        worldLayer.getChildren().add(player.getRectangle());
+        worldLayer.getChildren().add(player.getNode());
 
         // ================= UI =================
         UIManager uiManager = new UIManager(20, 30);
