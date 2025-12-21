@@ -3,6 +3,7 @@ package game.core;
 
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 
 /**
  * A4 - Input System
@@ -24,8 +25,8 @@ public class InputManager {
      */
     public void setupInput(Scene scene) {
 
-        // A4 - Quand une touche est pressée
-        scene.setOnKeyPressed(event -> {
+        // Capture keyboard input even when UI controls have focus by using filters
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (!inputEnabled) return;
 
             KeyCode code = event.getCode();
@@ -44,8 +45,7 @@ public class InputManager {
             }
         });
 
-        // A4 - Quand une touche est relâchée
-        scene.setOnKeyReleased(event -> {
+        scene.addEventFilter(KeyEvent.KEY_RELEASED, event -> {
             if (!inputEnabled) return;
 
             KeyCode code = event.getCode();

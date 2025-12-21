@@ -21,12 +21,12 @@ public enum Theme {
     ),
     SPRINT(
             "Sprint",
-            Color.web("#fff3d9"),
-            Color.web("#f7c873"),
-            Color.web("#f2a541"),
-            Color.web("#fce8b2"),
-            Color.web("#d06b2f"),
-            Color.web("#fff9ea"),
+            Color.web("#0f172a"),
+            Color.web("#ffb347"),
+            Color.web("#ff9234"),
+            Color.web("#ffd08a"),
+            Color.web("#e56717"),
+            Color.web("#ffe8c2"),
             1.15,
             1.08,
             1.05
