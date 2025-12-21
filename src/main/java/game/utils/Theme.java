@@ -9,43 +9,60 @@ import javafx.scene.paint.Color;
 public enum Theme {
     WINTER(
             "Winter",
-            Color.web("#dfe9ff"),
-            Color.web("#b7c7e0"),
-            Color.web("#8ba0c2"),
-            Color.web("#d1e4ff"),
-            Color.web("#5a6f8c"),
-            Color.web("#eff6ff"),
+            Color.web("#0d1b36"),
+            Color.web("#1e3a63"),
+            Color.web("#cbd9f5"),
+            Color.web("#7fa8e6"),
+            Color.web("#4b6a9d"),
+            Color.web("#1c2947"),
+            Color.web("#dce9ff"),
             0.9,
             0.92,
             0.9
     ),
     SPRINT(
             "Sprint",
-            Color.web("#0f172a"),
-            Color.web("#ffb347"),
-            Color.web("#ff9234"),
-            Color.web("#ffd08a"),
-            Color.web("#e56717"),
-            Color.web("#ffe8c2"),
+            Color.web("#0b0a1b"),
+            Color.web("#251449"),
+            Color.web("#f5c44e"),
+            Color.web("#ff9c3f"),
+            Color.web("#f4801f"),
+            Color.web("#231129"),
+            Color.web("#ffe3b3"),
             1.15,
             1.08,
             1.05
     ),
     SUMMER(
             "Summer",
-            Color.web("#c6f5d2"),
-            Color.web("#77c372"),
-            Color.web("#4d9b52"),
-            Color.web("#a3e4a7"),
-            Color.web("#2e6b34"),
-            Color.web("#e8fce9"),
+            Color.web("#0f2c28"),
+            Color.web("#1b4a3f"),
+            Color.web("#b3f5c4"),
+            Color.web("#6dd6a6"),
+            Color.web("#3aa76f"),
+            Color.web("#0f1f1b"),
+            Color.web("#dfffe8"),
+            1.02,
+            0.98,
+            1.0
+    ),
+    DUSK(
+            "Dusk",
+            Color.web("#1d0f2c"),
+            Color.web("#432454"),
+            Color.web("#f6d5ff"),
+            Color.web("#bf8bff"),
+            Color.web("#7a4aba"),
+            Color.web("#2b103f"),
+            Color.web("#ffe8ff"),
             1.0,
-            1.0,
+            0.96,
             1.0
     );
 
     private final String displayName;
-    private final Color background;
+    private final Color backgroundTop;
+    private final Color backgroundBottom;
     private final Color ground;
     private final Color tileBase;
     private final Color tileHighlight;
@@ -56,7 +73,8 @@ public enum Theme {
     private final double jumpScale;
 
     Theme(String displayName,
-          Color background,
+          Color backgroundTop,
+          Color backgroundBottom,
           Color ground,
           Color tileBase,
           Color tileHighlight,
@@ -66,7 +84,8 @@ public enum Theme {
           double gravityScale,
           double jumpScale) {
         this.displayName = displayName;
-        this.background = background;
+        this.backgroundTop = backgroundTop;
+        this.backgroundBottom = backgroundBottom;
         this.ground = ground;
         this.tileBase = tileBase;
         this.tileHighlight = tileHighlight;
@@ -82,7 +101,11 @@ public enum Theme {
     }
 
     public Color getBackground() {
-        return background;
+        return backgroundTop;
+    }
+
+    public Color getBackgroundBottom() {
+        return backgroundBottom;
     }
 
     public Color getGround() {
@@ -118,9 +141,12 @@ public enum Theme {
     }
 
     public String toCss() {
-        return String.format("rgba(%d,%d,%d,1.0)",
-                (int) (background.getRed() * 255),
-                (int) (background.getGreen() * 255),
-                (int) (background.getBlue() * 255));
+        return String.format("linear-gradient(from 0%% 0%% to 0%% 100%%, rgba(%d,%d,%d,1.0), rgba(%d,%d,%d,1.0))",
+                (int) (backgroundTop.getRed() * 255),
+                (int) (backgroundTop.getGreen() * 255),
+                (int) (backgroundTop.getBlue() * 255),
+                (int) (backgroundBottom.getRed() * 255),
+                (int) (backgroundBottom.getGreen() * 255),
+                (int) (backgroundBottom.getBlue() * 255));
     }
 }
