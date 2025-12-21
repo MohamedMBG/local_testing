@@ -1,6 +1,7 @@
 package game.systems;
 
 import javafx.scene.canvas.GraphicsContext;
+import game.utils.Theme;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +9,13 @@ import java.util.List;
 public class SpikeManager {
 
     private final List<Spike> spikes = new ArrayList<>();
+    private Theme theme = Theme.SUMMER;
+
+    public void setTheme(Theme theme) {
+        if (theme != null) {
+            this.theme = theme;
+        }
+    }
 
     public void spawnFrom(List<double[]> positions) {
         if (positions == null || positions.isEmpty()) {
@@ -38,7 +46,7 @@ public class SpikeManager {
 
     public void render(GraphicsContext gc, Camera camera) {
         for (Spike spike : spikes) {
-            spike.render(gc, camera);
+            spike.render(gc, camera, theme);
         }
     }
 

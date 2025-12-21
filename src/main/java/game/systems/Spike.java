@@ -2,6 +2,7 @@ package game.systems;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import game.utils.Theme;
 
 public class Spike {
 
@@ -35,14 +36,18 @@ public class Spike {
                py + ph > y;
     }
 
-    public void render(GraphicsContext gc, Camera camera) {
+    public void render(GraphicsContext gc, Camera camera, Theme theme) {
         if (!active) return;
 
         double screenX = x - camera.getOffsetX();
         double screenY = y - camera.getOffsetY();
 
         // Draw a small dark base rectangle so the triangular spike stands out
-        gc.setFill(Color.web("#3E2723"));
+        Color base = theme != null ? theme.getSpikeBase() : Color.web("#3E2723");
+        Color fill = theme != null ? theme.getSpikeFill() : Color.web("#D32F2F");
+        Color outline = theme != null ? theme.getSpikeOutline() : Color.web("#5D0E0E");
+
+        gc.setFill(base);
         gc.fillRect(screenX + 4, screenY + SIZE - 6, SIZE - 8, 6);
 
         // Draw spike as a triangle pointing upward
@@ -57,11 +62,11 @@ public class Spike {
             screenY + SIZE - 6          // bottom right
         };
 
-        gc.setFill(Color.web("#D32F2F")); // visible red
+        gc.setFill(fill); // visible red
         gc.fillPolygon(xPoints, yPoints, 3);
 
         // Outline
-        gc.setStroke(Color.web("#5D0E0E"));
+        gc.setStroke(outline);
         gc.setLineWidth(1.5);
         gc.strokePolygon(xPoints, yPoints, 3);
     }

@@ -11,7 +11,6 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -37,7 +36,7 @@ public class Game extends Application {
     private Rectangle fadeOverlay;
     private boolean restarting = false;
     private DashboardScreen dashboardScreen;
-    private Theme activeTheme = Theme.SUMMER;
+    private Theme activeTheme = Theme.NEUTRAL;
     private int highestScore = 0;
     private Button dashboardButton;
     private boolean levelBootstrapped = false;
@@ -172,20 +171,6 @@ public class Game extends Application {
         enemyManager.spawnFrom(jitteredEnemies);
         spikeManager.spawnFrom(level.getSpikeSpawns());
 
-        // Render Spikes
-        for (double[] sp : level.getSpikeSpawns()) {
-            if (sp == null || sp.length < 2) continue;
-            double sx = sp[0];
-            double sy = sp[1] + TileMap.TILE_SIZE - Spike.SIZE;
-
-            Rectangle base = new Rectangle(sx + 4, sy + Spike.SIZE - 6, Spike.SIZE - 8, 6);
-            base.setFill(Color.web("#3E2723"));
-            Polygon poly = new Polygon(sx + Spike.SIZE / 2.0, sy + 4, sx + 2, sy + Spike.SIZE - 6, sx + Spike.SIZE - 2, sy + Spike.SIZE - 6);
-            poly.setFill(Color.web("#D32F2F"));
-            poly.setStroke(Color.web("#5D0E0E"));
-            poly.setStrokeWidth(1.5);
-            worldLayer.getChildren().addAll(base, poly);
-        }
         worldLayer.toFront();
 
         // ================= WORLD =================
@@ -365,8 +350,9 @@ public class Game extends Application {
             double nx = pos[0] + dx;
             double ny = pos[1] + dy;
 
-            nx = Math.max(0, Math.min(worldWidth - itemWidth, nx));
-            ny = Math.max(0, Math.min(worldHeight - itemHeight, ny));
+            double margin = 4;
+            nx = Math.max(margin, Math.min(worldWidth - itemWidth - margin, nx));
+            ny = Math.max(margin, Math.min(worldHeight - itemHeight - margin, ny));
 
             result.add(new double[]{nx, ny});
         }
