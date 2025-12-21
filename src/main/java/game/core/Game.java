@@ -122,12 +122,6 @@ public class Game extends Application {
 
         worldLayer.getChildren().add(player.getNode());
 
-        // ================= UI =================
-        uiManager = new UIManager(20, 30, activeTheme);
-        uiManager.setBestScore(highestScore);
-        uiManager.setThemeName(activeTheme.getDisplayName());
-        root.getChildren().add(uiManager.getNode());
-
         // ================= GAME OVER SCREEN =================
         gameOverScreen = new GameOverScreen(WINDOW_WIDTH, WINDOW_HEIGHT, this::restartCurrentLevel);
         root.getChildren().add(gameOverScreen.getNode());
@@ -148,6 +142,13 @@ public class Game extends Application {
         Canvas canvas = new Canvas(WINDOW_WIDTH, WINDOW_HEIGHT);
         GraphicsContext gc = canvas.getGraphicsContext2D();
         root.getChildren().add(canvas);
+
+        // ================= UI =================
+        uiManager = new UIManager(20, 30, activeTheme);
+        uiManager.setBestScore(highestScore);
+        uiManager.setThemeName(activeTheme.getDisplayName());
+        root.getChildren().add(uiManager.getNode());
+        uiManager.getNode().toFront();
 
         createFadeOverlay();
 
