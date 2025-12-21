@@ -154,8 +154,9 @@ public class Physics {
                 if (map.isSolidTile(tx, bottomTile)) {
                     double tileTop = bottomTile * TileMap.TILE_SIZE;
 
-                    // Snap the player so feet sit exactly on tile top
-                    p.setPlayerY(tileTop - h - COLLISION_EPSILON);
+                    // Keep a tiny overlap so the next frame still sees the ground tile
+                    // and avoids a flickering airborne state on flat surfaces.
+                    p.setPlayerY(tileTop - h + COLLISION_EPSILON);
                     p.setVelocityY(0);
                     p.setOnGround(true);
                     return;
