@@ -5,6 +5,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
+import game.utils.Theme;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -15,6 +16,13 @@ public class CoinManager {
     public static final double DEFAULT_SIZE = 20.0;
 
     private final List<Coin> coins = new ArrayList<>();
+    private Theme theme = Theme.SUMMER;
+
+    public void setTheme(Theme theme) {
+        if (theme != null) {
+            this.theme = theme;
+        }
+    }
 
     // Clears the coins
     public void remove() {
@@ -72,12 +80,12 @@ public class CoinManager {
                 0, 0, 0, 1,
                 true,
                 CycleMethod.NO_CYCLE,
-                new Stop(0.0, Color.web("#FFF9C4")),
-                new Stop(0.4, Color.web("#FFE082")),
-                new Stop(1.0, Color.web("#FFB300"))
+                new Stop(0.0, theme.getCoinLight()),
+                new Stop(0.45, theme.getCoinMid()),
+                new Stop(1.0, theme.getCoinShadow())
         );
 
-        Color goldOutline = Color.web("#D68600");
+        Color goldOutline = theme.getCoinOutline();
 
         for (Coin coin : coins) {
             // Get the camera offset (for scrolling)

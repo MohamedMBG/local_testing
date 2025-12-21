@@ -67,6 +67,13 @@ public class GameWorld {
         this.goalFlagColor = theme.getTileHighlight();
         this.scoreListener = scoreListener;
 
+        coinManager.setTheme(theme);
+        if (powerUpManager != null) {
+            powerUpManager.setTheme(theme);
+        }
+        enemyManager.setTheme(theme);
+        spikeManager.setTheme(theme);
+
         // Place goal a bit before the very end of the map
         this.goalX = tileMap.getWidthInPixels() - 2 * TileMap.TILE_SIZE;
     }
@@ -166,7 +173,7 @@ public class GameWorld {
         if (powerUpManager != null) {
             powerUpManager.render(gc, camera);
         }
-        enemyManager.render(gc, camera);
+        enemyManager.render(gc, camera, theme);
         spikeManager.render(gc, camera);
 
         // ---- 3) Draw goal flag ----
@@ -176,8 +183,8 @@ public class GameWorld {
         gc.setFill(Color.WHITE);
         gc.fillText("Spikes: " + spikeManager.getCount(), 10, 20);
 
-        // Extra debug markers for spikes (canvas overlay) - bright red squares
-        gc.setFill(Color.RED);
+        // Extra debug markers for spikes (canvas overlay) - bright hazard color
+        gc.setFill(theme.getSpikeFill());
         for (double[] sp : spikeManager.getPositions()) {
             double sx = sp[0] - camera.getOffsetX();
             double sy = sp[1] - camera.getOffsetY();

@@ -2,6 +2,7 @@ package game.systems;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import game.utils.Theme;
 
 public class Enemy {
 
@@ -45,18 +46,21 @@ public class Enemy {
         }
     }
 
-    public void render(GraphicsContext gc, Camera camera) {
+    public void render(GraphicsContext gc, Camera camera, Theme theme) {
         if (!alive) return;
 
         double screenX = x - camera.getOffsetX();
         double screenY = y - camera.getOffsetY();
 
         // Body
-        gc.setFill(Color.web("#C62828")); // red shell
+        Color fill = theme != null ? theme.getEnemyFill() : Color.web("#C62828");
+        Color outline = theme != null ? theme.getEnemyOutline() : Color.web("#4E0B0B");
+
+        gc.setFill(fill);
         gc.fillRoundRect(screenX, screenY, SIZE, SIZE, 8, 8);
 
         // Outline
-        gc.setStroke(Color.web("#4E0B0B"));
+        gc.setStroke(outline);
         gc.setLineWidth(1.5);
         gc.strokeRoundRect(screenX, screenY, SIZE, SIZE, 8, 8);
 

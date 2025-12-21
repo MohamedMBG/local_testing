@@ -33,7 +33,7 @@ public class DashboardScreen {
     private final Map<ToggleButton, Theme> toggleThemes = new HashMap<>();
     private final Consumer<Theme> onThemeChanged;
     private final Runnable onStart;
-    private Theme selectedTheme = Theme.SUMMER;
+    private Theme selectedTheme = Theme.NEUTRAL;
 
     public DashboardScreen(double width,
                            double height,

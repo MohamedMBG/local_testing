@@ -1,6 +1,7 @@
 package game.systems;
 
 import game.core.Player;
+import game.utils.Theme;
 import javafx.scene.canvas.GraphicsContext;
 
 import java.util.ArrayList;
@@ -9,6 +10,13 @@ import java.util.List;
 public class EnemyManager {
 
     private final List<Enemy> enemies = new ArrayList<>();
+    private Theme theme = Theme.SUMMER;
+
+    public void setTheme(Theme theme) {
+        if (theme != null) {
+            this.theme = theme;
+        }
+    }
 
     public void spawnFrom(List<double[]> positions) {
         for (double[] p : positions) {
@@ -38,9 +46,9 @@ public class EnemyManager {
         return false;
     }
 
-    public void render(GraphicsContext gc, Camera camera) {
+    public void render(GraphicsContext gc, Camera camera, Theme theme) {
         for (Enemy e : enemies) {
-            e.render(gc, camera);
+            e.render(gc, camera, theme != null ? theme : this.theme);
         }
     }
 }

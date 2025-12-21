@@ -2,6 +2,7 @@ package game.systems;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import game.utils.Theme;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -12,6 +13,13 @@ public class PowerUpManager {
     public static final double DEFAULT_SIZE = 24.0;
 
     private final List<PowerUp> powerUps = new ArrayList<>();
+    private Theme theme = Theme.SUMMER;
+
+    public void setTheme(Theme theme) {
+        if (theme != null) {
+            this.theme = theme;
+        }
+    }
 
     public void remove() {
         powerUps.clear();
@@ -65,8 +73,9 @@ public class PowerUpManager {
             double screenY = p.getY() - camera.getOffsetY();
 
             Color base = colorFor(p.getType());
-            Color rim = base.deriveColor(0, 1, 0.8, 1);
-            Color glow = base.deriveColor(0, 1, 1.3, 0.6);
+            Color glowBlend = theme.getPowerUpGlow();
+            Color rim = base.interpolate(glowBlend, 0.3).deriveColor(0, 1, 0.92, 1);
+            Color glow = glowBlend.interpolate(base, 0.4).deriveColor(0, 1, 1.15, 0.65);
 
             gc.setFill(glow);
             gc.fillOval(screenX - 4, screenY - 4, p.getWidth() + 8, p.getHeight() + 8);
