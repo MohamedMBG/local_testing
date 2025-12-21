@@ -1,11 +1,15 @@
 package game.systems;
 
+import game.utils.Theme;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -20,95 +24,77 @@ public class UIManager {
     private final Text bestText;
     private final Text themeText;
     private final HBox heartsBox;
+    private final Rectangle panelBackground;
+    private final Region coinIcon;
+    private final DropShadow shadow;
 
     private int score = 0;
     private int coins = 0;
     private int lives = 3;
     private int bestScore = 0;
-    private String activeTheme = "";
+    private Theme theme;
 
-    public UIManager(double x, double y) {
+    public UIManager(double x, double y, Theme theme) {
+
+        this.theme = theme;
 
         // Panel background
-        Rectangle bg = new Rectangle(360, 116);
-        bg.setArcWidth(18);
-        bg.setArcHeight(18);
-        bg.setFill(new javafx.scene.paint.LinearGradient(
-                0, 0, 1, 1, true, javafx.scene.paint.CycleMethod.NO_CYCLE,
-                new javafx.scene.paint.Stop(0, Color.rgb(27, 34, 54, 0.85)),
-                new javafx.scene.paint.Stop(1, Color.rgb(54, 81, 105, 0.9))
-        ));
-        bg.setStroke(Color.rgb(255, 255, 255, 0.25));
-        bg.setStrokeWidth(1.5);
+        panelBackground = new Rectangle(380, 124);
+        panelBackground.setArcWidth(20);
+        panelBackground.setArcHeight(20);
 
         // Text style
-        Font font = Font.font("Arial", FontWeight.EXTRA_BOLD, 18);
-        DropShadow shadow = new DropShadow(3, Color.rgb(0, 0, 0, 0.7));
+        Font font = Font.font("Inter", FontWeight.EXTRA_BOLD, 18);
+        shadow = new DropShadow(6, Color.rgb(0, 0, 0, 0.55));
 
         scoreText = new Text("SCORE  0");
         scoreText.setFont(font);
-        scoreText.setFill(Color.rgb(230, 242, 255));
         scoreText.setEffect(shadow);
-        scoreText.setStroke(Color.rgb(0, 0, 0, 0.35));
-        scoreText.setStrokeWidth(0.7);
 
-        coinsText = new Text("x  0");
+        coinsText = new Text("COINS  0");
         coinsText.setFont(font);
-        coinsText.setFill(Color.rgb(230, 242, 255));
         coinsText.setEffect(shadow);
-        coinsText.setStroke(Color.rgb(0, 0, 0, 0.35));
-        coinsText.setStrokeWidth(0.7);
 
         bestText = new Text("BEST  0");
-        bestText.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 16));
-        bestText.setFill(Color.rgb(255, 230, 179));
+        bestText.setFont(Font.font("Inter", FontWeight.EXTRA_BOLD, 16));
         bestText.setEffect(shadow);
-        bestText.setStroke(Color.rgb(0, 0, 0, 0.35));
-        bestText.setStrokeWidth(0.7);
 
-        themeText = new Text("Theme: Summer");
-        themeText.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        themeText.setFill(Color.rgb(210, 222, 238));
+        themeText = new Text("Theme: " + theme.getDisplayName());
+        themeText.setFont(Font.font("Inter", FontWeight.BOLD, 14));
         themeText.setEffect(shadow);
-        themeText.setStroke(Color.rgb(0, 0, 0, 0.25));
-        themeText.setStrokeWidth(0.5);
 
         // Hearts (lives)
         heartsBox = new HBox(6);
         heartsBox.setAlignment(Pos.CENTER_LEFT);
-        rebuildHearts();
 
         // Small coin icon next to the coins counter
-        Region coinIcon = new Region();
+        coinIcon = new Region();
         coinIcon.setPrefSize(18, 18);
-        coinIcon.setBackground(new Background(new BackgroundFill(
-                Color.web("#FFCA28"),
-                new CornerRadii(9),
-                Insets.EMPTY
-        )));
-        coinIcon.setBorder(new Border(new BorderStroke(
-                Color.web("#D68600"),
-                BorderStrokeStyle.SOLID,
-                new CornerRadii(9),
-                new BorderWidths(1.5)
-        )));
-        coinIcon.setEffect(new DropShadow(2, Color.rgb(0, 0, 0, 0.6)));
 
-        HBox coinsRow = new HBox(6, coinIcon, coinsText);
+        HBox coinsRow = new HBox(8, coinIcon, coinsText);
         coinsRow.setAlignment(Pos.CENTER_LEFT);
 
-        VBox left = new VBox(4, scoreText, coinsRow, bestText, themeText);
+        VBox left = new VBox(6, scoreText, coinsRow, bestText, themeText);
         left.setAlignment(Pos.CENTER_LEFT);
 
         HBox row = new HBox(18, left, heartsBox);
         row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(10, 12, 10, 12));
+        row.setPadding(new Insets(12, 14, 12, 14));
 
-        StackPane panel = new StackPane(bg, row);
+        StackPane panel = new StackPane(panelBackground, row);
         panel.setLayoutX(x);
         panel.setLayoutY(y);
+        panel.setBorder(new Border(new BorderStroke(
+                Color.rgb(255, 255, 255, 0.25),
+                BorderStrokeStyle.SOLID,
+                new CornerRadii(20),
+                new BorderWidths(1.5)
+        )));
 
         node = new Group(panel);
+
+        applyTheme(theme);
+        rebuildHearts();
     }
 
     private void rebuildHearts() {
@@ -119,17 +105,17 @@ public class UIManager {
     }
 
     private Region makeHeart() {
-        // Simple heart using a colored rounded rect (easy + clean)
         Region heart = new Region();
         heart.setPrefSize(18, 18);
-        heart.setBackground(new Background(new BackgroundFill(Color.RED, new CornerRadii(6), Insets.EMPTY)));
+        Color heartColor = theme.getCoinMid().deriveColor(0, 1, 0.95, 1);
+        heart.setBackground(new Background(new BackgroundFill(heartColor, new CornerRadii(7), Insets.EMPTY)));
         heart.setBorder(new Border(new BorderStroke(
-                Color.rgb(255, 255, 255, 0.25),
+                theme.getCoinOutline().deriveColor(0, 1, 1, 0.5),
                 BorderStrokeStyle.SOLID,
-                new CornerRadii(6),
-                new BorderWidths(1)
+                new CornerRadii(7),
+                new BorderWidths(1.2)
         )));
-        heart.setEffect(new DropShadow(2, Color.rgb(0, 0, 0, 0.6)));
+        heart.setEffect(new DropShadow(3, Color.rgb(0, 0, 0, 0.6)));
         return heart;
     }
 
@@ -156,7 +142,6 @@ public class UIManager {
     }
 
     public void setThemeName(String theme) {
-        this.activeTheme = theme;
         themeText.setText("Theme: " + theme);
     }
 
@@ -166,10 +151,60 @@ public class UIManager {
         setCoins(coins);
         setLives(lives);
         setBestScore(bestScore);
-        setThemeName(activeTheme);
+        setThemeName(theme.getDisplayName());
     }
 
     public Group getNode() {
         return node;
+    }
+
+    public void setTheme(Theme theme) {
+        this.theme = theme;
+        applyTheme(theme);
+        rebuildHearts();
+    }
+
+    private void applyTheme(Theme theme) {
+        LinearGradient glass = new LinearGradient(
+                0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
+                new Stop(0, theme.getBackground().deriveColor(0, 1, 1, 0.78)),
+                new Stop(1, theme.getBackgroundBottom().deriveColor(0, 1, 1, 0.82))
+        );
+        panelBackground.setFill(glass);
+        panelBackground.setStroke(theme.getTileAccent().deriveColor(0, 1, 1, 0.32));
+        panelBackground.setStrokeWidth(1.8);
+
+        Color brightText = theme.getTileHighlight().desaturate().deriveColor(0, 1, 1.1, 1);
+        Color labelText = theme.getTileBase().deriveColor(0, 1, 1.2, 0.9);
+        Color softGlow = theme.getBackgroundBottom().interpolate(Color.WHITE, 0.55);
+
+        scoreText.setFill(brightText);
+        scoreText.setStroke(Color.rgb(0, 0, 0, 0.35));
+
+        coinsText.setFill(brightText);
+        coinsText.setStroke(Color.rgb(0, 0, 0, 0.35));
+
+        bestText.setFill(softGlow);
+        bestText.setStroke(Color.rgb(0, 0, 0, 0.35));
+
+        themeText.setFill(labelText);
+        themeText.setStroke(Color.rgb(0, 0, 0, 0.25));
+
+        coinIcon.setBackground(new Background(new BackgroundFill(
+                new LinearGradient(
+                        0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
+                        new Stop(0, theme.getCoinLight()),
+                        new Stop(1, theme.getCoinShadow())
+                ),
+                new CornerRadii(9),
+                Insets.EMPTY
+        )));
+        coinIcon.setBorder(new Border(new BorderStroke(
+                theme.getCoinOutline(),
+                BorderStrokeStyle.SOLID,
+                new CornerRadii(9),
+                new BorderWidths(1.5)
+        )));
+        coinIcon.setEffect(new DropShadow(4, Color.rgb(0, 0, 0, 0.7)));
     }
 }
