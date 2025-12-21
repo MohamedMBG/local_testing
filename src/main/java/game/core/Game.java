@@ -143,9 +143,13 @@ public class Game extends Application {
         SpikeManager spikeManager = new SpikeManager();
 
         Random rng = new Random();
-        List<double[]> jitteredCoins = jitterSpawns(level.getCoinSpawns(), tileMap, rng, 6, 4);
-        List<double[]> jitteredPowerUps = jitterSpawns(level.getPowerUpSpawns(), tileMap, rng, 4, 4);
-        List<double[]> jitteredEnemies = jitterSpawns(level.getEnemySpawns(), tileMap, rng, 4, 0);
+        List<double[]> coinSpawns = centerWithinTile(level.getCoinSpawns(), CoinManager.DEFAULT_SIZE, CoinManager.DEFAULT_SIZE);
+        List<double[]> powerUpSpawns = centerWithinTile(level.getPowerUpSpawns(), PowerUpManager.DEFAULT_SIZE, PowerUpManager.DEFAULT_SIZE);
+        List<double[]> enemySpawns = restOnTileTop(level.getEnemySpawns(), Enemy.SIZE, Enemy.SIZE);
+
+        List<double[]> jitteredCoins = jitterSpawns(coinSpawns, tileMap, rng, 3, 2, CoinManager.DEFAULT_SIZE, CoinManager.DEFAULT_SIZE);
+        List<double[]> jitteredPowerUps = jitterSpawns(powerUpSpawns, tileMap, rng, 2, 2, PowerUpManager.DEFAULT_SIZE, PowerUpManager.DEFAULT_SIZE);
+        List<double[]> jitteredEnemies = jitterSpawns(enemySpawns, tileMap, rng, 2, 0, Enemy.SIZE, Enemy.SIZE);
 
         coinManager.spawnFrom(jitteredCoins);
         spawnPowerUps(powerUpManager, jitteredPowerUps, rng);
@@ -255,19 +259,62 @@ public class Game extends Application {
         fadeOverlay.toFront();
     }
 
-    private static List<double[]> jitterSpawns(List<double[]> original, TileMap tileMap, Random rng, double maxOffsetX, double maxOffsetY) {
-        // ... (Keep existing code) ...
+    private static List<double[]> jitterSpawns(
+            List<double[]> original,
+            TileMap tileMap,
+            Random rng,
+            double maxOffsetX,
+            double maxOffsetY,
+            double itemWidth,
+            double itemHeight) {
+
         List<double[]> result = new ArrayList<>();
         if (original == null) return result;
+
         int worldWidth = tileMap.getWidthInPixels();
+        int worldHeight = tileMap.getHeightInPixels();
+
         for (double[] pos : original) {
             if (pos == null || pos.length < 2) continue;
-            double x = pos[0]; double y = pos[1];
+
             double dx = (rng.nextDouble() * 2 - 1) * maxOffsetX;
             double dy = (rng.nextDouble() * 2 - 1) * maxOffsetY;
-            double nx = Math.max(0, Math.min(worldWidth - TileMap.TILE_SIZE, x + dx));
-            double ny = Math.max(0, y + dy);
+
+            double nx = pos[0] + dx;
+            double ny = pos[1] + dy;
+
+            nx = Math.max(0, Math.min(worldWidth - itemWidth, nx));
+            ny = Math.max(0, Math.min(worldHeight - itemHeight, ny));
+
             result.add(new double[]{nx, ny});
+        }
+        return result;
+    }
+
+    private List<double[]> centerWithinTile(List<double[]> original, double itemWidth, double itemHeight) {
+        List<double[]> result = new ArrayList<>();
+        if (original == null) return result;
+
+        double offsetX = (TileMap.TILE_SIZE - itemWidth) / 2.0;
+        double offsetY = (TileMap.TILE_SIZE - itemHeight) / 2.0;
+
+        for (double[] pos : original) {
+            if (pos == null || pos.length < 2) continue;
+            result.add(new double[]{pos[0] + offsetX, pos[1] + offsetY});
+        }
+        return result;
+    }
+
+    private List<double[]> restOnTileTop(List<double[]> original, double itemWidth, double itemHeight) {
+        List<double[]> result = new ArrayList<>();
+        if (original == null) return result;
+
+        double offsetX = (TileMap.TILE_SIZE - itemWidth) / 2.0;
+        double offsetY = TileMap.TILE_SIZE - itemHeight;
+
+        for (double[] pos : original) {
+            if (pos == null || pos.length < 2) continue;
+            result.add(new double[]{pos[0] + offsetX, pos[1] + offsetY});
         }
         return result;
     }
@@ -280,7 +327,7 @@ public class Game extends Application {
             if (pos == null || pos.length < 2) continue;
 
             PowerUpType type = types[rng.nextInt(types.length)];
-            manager.spawn(pos[0], pos[1], 24, 24, type);
+            manager.spawn(pos[0], pos[1], PowerUpManager.DEFAULT_SIZE, PowerUpManager.DEFAULT_SIZE, type);
         }
     }
 
