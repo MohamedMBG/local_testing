@@ -1,6 +1,7 @@
 package game.core;
 
 import game.systems.*;
+import game.utils.HighScoreDatabase;
 import game.utils.Theme;
 import javafx.animation.FadeTransition;
 import javafx.application.Application;
@@ -38,6 +39,7 @@ public class Game extends Application {
     private DashboardScreen dashboardScreen;
     private Theme activeTheme = Theme.NEUTRAL;
     private int highestScore = 0;
+    private HighScoreDatabase highScoreDatabase;
     private Button dashboardButton;
     private boolean levelBootstrapped = false;
     private UIManager uiManager;
@@ -60,11 +62,15 @@ public class Game extends Application {
             rawLevels.add(ProceduralLevelGenerator.generate(lvl, mapWidthTiles, mapHeightTiles, seed + lvl * 999L));
         }
 
+        highScoreDatabase = new HighScoreDatabase();
+        highestScore = highScoreDatabase.loadHighScore();
+
         inputManager = new InputManager();
         inputManager.setupInput(scene);
 
         // Dashboard lets players choose a theme and see their best score before the run starts
         dashboardScreen = new DashboardScreen(WINDOW_WIDTH, WINDOW_HEIGHT, this::onThemePicked, this::launchFromDashboard);
+        dashboardScreen.setHighScore(highestScore);
         root.getChildren().add(dashboardScreen.getNode());
         dashboardScreen.show();
 
@@ -318,6 +324,9 @@ public class Game extends Application {
     private void onScoreChanged(int score) {
         if (score > highestScore) {
             highestScore = score;
+            if (highScoreDatabase != null) {
+                highScoreDatabase.saveHighScore(highestScore);
+            }
             if (dashboardScreen != null) {
                 dashboardScreen.setHighScore(highestScore);
             }
