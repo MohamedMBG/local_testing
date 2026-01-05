@@ -24,36 +24,36 @@ public class GameWorld {
     private Color goalFlagColor; // Cached color used to draw the goal flag (depends on theme).
 
     // ---- Game state ----
-    private int score = 0; // Current score.
-    private int coins = 0; // Total coins collected.
-    private int lives = 3; // Remaining lives.
-    private boolean gameOver = false; // True when the game ends (no more updates / show game over).
+    private int score = 0;
+    private int coins = 0;
+    private int lives = 3;
+    private boolean gameOver = false;
 
     // Respawn point
-    private final double spawnX; // Player respawns here in X.
-    private final double spawnY; // Player respawns here in Y.
+    private final double spawnX;
+    private final double spawnY;
 
     // Simple level end goal position (near the right side of the map)
-    private final double goalX; // X position where the level ends (when player reaches it).
+    private final double goalX;
 
     // Temporary invincibility timer from star power-ups
-    // ⭐ This is the "protection" mechanic: while > 0, player cannot lose lives from enemies/spikes.
-    private double invincibilityTimer = 0; // Remaining invincibility time in seconds.
-    private final Consumer<Integer> scoreListener; // Optional callback (e.g., to update another UI component).
+    // This is the "protection" mechanic: while > 0, player cannot lose lives from enemies/spikes.
+    private double invincibilityTimer = 0;
+    private final Consumer<Integer> scoreListener;
 
-    public GameWorld( // Constructor: receives all managers and objects needed to run the world.
-                      TileMap tileMap, // Map reference.
-                      Camera camera, // Camera reference.
-                      CoinManager coinManager, // Coin manager reference.
-                      PowerUpManager powerUpManager, // Power-up manager reference (can be null).
-                      EnemyManager enemyManager, // Enemy manager reference.
-                      SpikeManager spikeManager, // Spike manager reference.
-                      UIManager uiManager, // UI manager reference.
-                      Player player, // Player reference.
-                      double spawnX, // Spawn X.
-                      double spawnY, // Spawn Y.
-                      GameOverScreen gameOverScreen, // Game over screen reference.
-                      Theme theme, // Theme reference.
+    public GameWorld(
+                      TileMap tileMap,
+                      Camera camera,
+                      CoinManager coinManager,
+                      PowerUpManager powerUpManager,
+                      EnemyManager enemyManager,
+                      SpikeManager spikeManager,
+                      UIManager uiManager,
+                      Player player,
+                      double spawnX,
+                      double spawnY,
+                      GameOverScreen gameOverScreen,
+                      Theme theme,
                       Consumer<Integer> scoreListener // Score callback reference.
     ) {
         this.tileMap = tileMap; // Store tile map in this world.
@@ -69,17 +69,17 @@ public class GameWorld {
         this.gameOverScreen = gameOverScreen; // Store game over screen.
         this.theme = theme; // Store theme.
         this.goalFlagColor = theme.getTileHighlight(); // Choose a nice color for the goal flag based on theme.
-        this.scoreListener = scoreListener; // Store score callback.
+        this.scoreListener = scoreListener;
 
-        coinManager.setTheme(theme); // Give coin manager the theme so it renders coins with matching colors.
-        if (powerUpManager != null) { // Only do this if powerUpManager exists.
-            powerUpManager.setTheme(theme); // Give power-up manager the theme (important for STAR glow).
+        coinManager.setTheme(theme);
+        if (powerUpManager != null) {
+            powerUpManager.setTheme(theme);
         }
-        enemyManager.setTheme(theme); // Give enemy manager the theme.
-        spikeManager.setTheme(theme); // Give spike manager the theme.
+        enemyManager.setTheme(theme);
+        spikeManager.setTheme(theme);
 
         // Place goal a bit before the very end of the map
-        this.goalX = tileMap.getWidthInPixels() - 2 * TileMap.TILE_SIZE; // Goal is near the right edge.
+        this.goalX = tileMap.getWidthInPixels() - 2 * TileMap.TILE_SIZE;
     }
 
     // -------------------------------------------------
@@ -91,7 +91,7 @@ public class GameWorld {
             return; // ...exit early so nothing moves/changes anymore.
         }
 
-        // ⭐ STAR PROTECTION: count down invincibility time every frame.
+        // count down invincibility time every frame.
         if (invincibilityTimer > 0) { // If player currently has invincibility active...
             invincibilityTimer = Math.max(0, invincibilityTimer - dt); // Decrease timer and never go below 0.
         }
@@ -121,7 +121,7 @@ public class GameWorld {
 
         // ===== Enemies =====
         boolean playerHit = enemyManager.update(dt, player, tileMap); // Update enemies and check if player got hit.
-        // ⭐ STAR PROTECTION: only lose life if hit AND not invincible.
+        //  STAR PROTECTION: only lose life if hit AND not invincible.
         if (playerHit && !isInvincible()) { // If enemy hit player AND STAR protection is NOT active...
             loseLife(); // Decrease life and respawn or end game.
         }
@@ -133,7 +133,7 @@ public class GameWorld {
                 player.getWidth(), // Player width.
                 player.getHeight() // Player height.
         );
-        // ⭐ STAR PROTECTION: spikes also cannot hurt you if invincible.
+        //  STAR PROTECTION: spikes also cannot hurt you if invincible.
         if (playerTouchedSpike && !isInvincible()) { // If spike touched player AND STAR protection is NOT active...
             loseLife(); // Decrease life and respawn or end game.
         }
@@ -219,14 +219,14 @@ public class GameWorld {
         switch (type) { // Switch on the collected power-up.
             case MUSHROOM -> score += 100; // Mushroom gives points (placeholder effect).
             case FLOWER -> score += 150; // Flower gives points (placeholder effect).
-            // ⭐ STAR PROTECTION: STAR sets invincibility time (seconds).
+            //  STAR PROTECTION: STAR sets invincibility time (seconds).
             case STAR -> invincibilityTimer = 6.0; // Make player invincible for 6 seconds.
             case LIFE -> lives++; // Extra life.
         }
     }
 
     private boolean isInvincible() { // Helper: checks if STAR protection is active.
-        return invincibilityTimer > 0; // True if timer still running.
+        return invincibilityTimer > 0;
     }
 
     // -------------------------------------------------

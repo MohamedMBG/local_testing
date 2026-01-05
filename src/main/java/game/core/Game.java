@@ -4,7 +4,9 @@ import game.systems.*;
 import game.utils.Theme;
 import javafx.animation.FadeTransition;
 import javafx.application.Application;
+import javafx.geometry.Bounds;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -15,6 +17,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -51,7 +54,7 @@ public class Game extends Application {
 
         // ================= LEVELS GENERATION =================
         long seed = System.currentTimeMillis();
-        int levelsCount = 6;
+        int levelsCount = 40;
         int mapWidthTiles = 110;
         int mapHeightTiles = 8;
 
@@ -79,14 +82,13 @@ public class Game extends Application {
     private void startLevel(int levelIndex) {
         // 1. Cleanup previous level
         if (activeLoop != null) {
-            activeLoop.stop(); // Stop the timer
+            activeLoop.stop();
         }
-        root.getChildren().clear(); // Remove old objects
+        root.getChildren().clear();
 
         // 2. Check if levels are finished
         if (levelIndex >= rawLevels.size()) {
             System.out.println("ALL LEVELS COMPLETED!");
-            // You could show a "You Win the Game" screen here
             return;
         }
 
@@ -95,8 +97,6 @@ public class Game extends Application {
         // 3. Load Level Data
         List<String> rawLines = rawLevels.get(levelIndex);
         List<String> normalizedLines = normalizeLevelLines(rawLines);
-
-// >>> NEW: Push everything down to the ground <<<
         List<String> lines = alignLevelToGround(normalizedLines);
 
         LevelLoader loader = new LevelLoader();
@@ -110,35 +110,41 @@ public class Game extends Application {
         Group worldLayer = new Group();
         root.getChildren().add(worldLayer);
 
-        Ground ground = new Ground(0, WINDOW_HEIGHT - 80, tileMap.getWidthInPixels(), 80);
+        // ================= GROUND =================
+        final double groundHeight = 80;
+        final double groundTopY = WINDOW_HEIGHT - groundHeight;
+
+        Ground ground = new Ground(0, groundTopY, tileMap.getWidthInPixels(), groundHeight);
         ground.applyTheme(activeTheme.getGround());
         worldLayer.getChildren().add(ground.getRectangle());
 
-        double groundY = WINDOW_HEIGHT - 140 - 50;
+        // ================= PLAYER SPAWN (FALL FROM SKY) =================
+        double spawnX = level.getPlayerSpawnX();
+        double spawnY = 0; // Force start at Top of Screen
 
-// Use the level's X spawn, but force our calculated ground Y
-        Player player = new Player(level.getPlayerSpawnX(), groundY);
+        Player player = new Player(spawnX, spawnY);
         player.applyTheme(activeTheme);
-
         worldLayer.getChildren().add(player.getNode());
 
-        // ================= GAME OVER SCREEN =================
+        // Ensure physics engine knows we are in the air
+        setPlayerPositionBestEffort(player, spawnX, spawnY);
+        resetPlayerMotionBestEffort(player);
+        invokeIfExists(player, "setOnGround", new Class[]{boolean.class}, new Object[]{false});
+
+        // ================= SCREENS =================
         gameOverScreen = new GameOverScreen(WINDOW_WIDTH, WINDOW_HEIGHT, this::restartCurrentLevel);
         root.getChildren().add(gameOverScreen.getNode());
 
-        // ================= LEVEL COMPLETE SCREEN =================
-        // Pass a lambda to handle what happens when "Next Level" is clicked
         LevelCompleteScreen completeScreen = new LevelCompleteScreen(WINDOW_WIDTH, WINDOW_HEIGHT, () -> {
             currentLevelIndex++;
             startLevel(currentLevelIndex);
         });
         root.getChildren().add(completeScreen.getNode());
 
-        // ================= INPUT =================
+        // ================= INPUT & CANVAS =================
         inputManager.resetAllInputs();
         inputManager.setInputEnabled(true);
 
-        // ================= CANVAS =================
         Canvas canvas = new Canvas(WINDOW_WIDTH, WINDOW_HEIGHT);
         GraphicsContext gc = canvas.getGraphicsContext2D();
         root.getChildren().add(canvas);
@@ -174,34 +180,34 @@ public class Game extends Application {
 
         worldLayer.toFront();
 
-        // ================= WORLD =================
+        // ================= WORLD OBJECT =================
         GameWorld world = new GameWorld(
                 tileMap, camera, coinManager, powerUpManager, enemyManager, spikeManager,
-                uiManager, player, level.getPlayerSpawnX(), level.getPlayerSpawnY(),
+                uiManager, player,
+                level.getPlayerSpawnX(),
+                0, // <--- CRITICAL FIX: Pass 0 (Sky) instead of level.getPlayerSpawnY()
                 gameOverScreen, activeTheme, this::onScoreChanged
         );
 
-        // ================= LOOP =================
+        // ================= GAME LOOP =================
         activeLoop = new GameLoop(
                 player, ground, inputManager, WINDOW_WIDTH, WINDOW_HEIGHT,
                 world, gc, tileMap, camera, worldLayer,
                 this::restartCurrentLevel
         ) {
-            // Override update to check for win condition every frame
             @Override
             public void handle(long now) {
                 super.handle(now);
-
-                // WIN CONDITION CHECK:
-                // If player is near the end of the map (Map Width - 100px)
                 if (player.getPlayerX() > tileMap.getWidthInPixels() - 150) {
-                    this.stop(); // Stop the game loop
-                    completeScreen.show(); // Show the screen
+                    this.stop();
+                    completeScreen.show();
                 }
             }
         };
 
+        // Start Physics Immediately (Player falls while screen fades in)
         activeLoop.start();
+
         levelBootstrapped = true;
         attachDashboardButton();
         root.getChildren().add(dashboardScreen.getNode());
@@ -218,46 +224,58 @@ public class Game extends Application {
             gameOverScreen.hide();
         }
 
+        // Disable input so user can't move while screen is black
         inputManager.resetAllInputs();
         inputManager.setInputEnabled(false);
 
         Rectangle overlayBefore = fadeOverlay;
         if (overlayBefore != null) {
             overlayBefore.setMouseTransparent(false);
-            FadeTransition fadeIn = new FadeTransition(Duration.millis(300), overlayBefore);
-            fadeIn.setFromValue(0);
-            fadeIn.setToValue(1);
-            fadeIn.setOnFinished(event -> {
+
+            // 1. Fade screen to BLACK
+            FadeTransition fadeToBlack = new FadeTransition(Duration.millis(300), overlayBefore);
+            fadeToBlack.setFromValue(0);
+            fadeToBlack.setToValue(1);
+
+            fadeToBlack.setOnFinished(event -> {
+                // 2. Load the level
+                // This spawns the player at Y=0 and STARTS the physics loop immediately.
                 startLevel(currentLevelIndex);
 
+                // 3. Fade screen to TRANSPARENT (Reveal Game)
                 Rectangle overlayAfter = fadeOverlay;
                 if (overlayAfter != null) {
                     overlayAfter.setOpacity(1);
                     overlayAfter.setMouseTransparent(false);
-                    FadeTransition fadeOut = new FadeTransition(Duration.millis(300), overlayAfter);
-                    fadeOut.setFromValue(1);
-                    fadeOut.setToValue(0);
-                    fadeOut.setOnFinished(e -> {
+
+                    // 600ms duration: Gives the player time to fall from Y=0 to the ground
+                    // while the screen is clearing.
+                    FadeTransition fadeToClear = new FadeTransition(Duration.millis(600), overlayAfter);
+                    fadeToClear.setFromValue(1);
+                    fadeToClear.setToValue(0);
+
+                    fadeToClear.setOnFinished(e -> {
+                        // 4. Re-enable controls only after landing/fade is done
                         inputManager.resetAllInputs();
                         inputManager.setInputEnabled(true);
                         overlayAfter.setMouseTransparent(true);
                         restarting = false;
+                        refocusScene();
                     });
-                    fadeOut.play();
+                    fadeToClear.play();
                 } else {
                     inputManager.setInputEnabled(true);
                     restarting = false;
                 }
             });
-            fadeIn.play();
+            fadeToBlack.play();
         } else {
+            // Fallback if no overlay
             startLevel(currentLevelIndex);
             inputManager.setInputEnabled(true);
             restarting = false;
         }
     }
-
-    // ... (Keep your existing helper methods: jitterSpawns, normalizeLevelLines, main) ...
 
     private void createFadeOverlay() {
         fadeOverlay = new Rectangle(WINDOW_WIDTH, WINDOW_HEIGHT, Color.BLACK);
@@ -309,7 +327,6 @@ public class Game extends Application {
         if (dashboardScreen != null) {
             dashboardScreen.setHighScore(highestScore);
         }
-        // reapply to current level if it exists
         if (activeLoop != null) {
             startLevel(currentLevelIndex);
         }
@@ -326,6 +343,198 @@ public class Game extends Application {
             }
         }
     }
+
+    // ============================
+    // Spawn helpers
+    // ============================
+
+    private static void forceLayout(Pane root, Node node) {
+        if (root == null || node == null) return;
+        root.applyCss();
+        root.layout();
+    }
+
+    private static double safeNodeHeight(Node node) {
+        if (node == null) return 50;
+        Bounds b = node.getBoundsInParent();
+        double h = (b != null) ? b.getHeight() : 0;
+        return h > 1 ? h : 50;
+    }
+
+    /**
+     * Drops the player down from startY to maxY until it collides with the tileMap.
+     * Then returns a Y that places it ON TOP of that collision (not inside it).
+     *
+     * Works with your existing TileMap collision API via isCollidingBestEffort().
+     */
+    private double computeSpawnYOnFirstCollision(
+            TileMap tileMap,
+            Player player,
+            double x,
+            double startY,
+            double maxY,
+            double stepY
+    ) {
+        if (tileMap == null || player == null) return startY;
+
+        Node n = player.getNode();
+        if (n == null) return startY;
+
+        // start from above
+        setPlayerPositionBestEffort(player, x, startY);
+        forceLayout(root, n);
+
+        boolean foundCollision = false;
+        double y = startY;
+
+        // Drop down until collision happens
+        for (y = startY; y <= maxY; y += stepY) {
+            setPlayerPositionBestEffort(player, x, y);
+            forceLayout(root, n);
+
+            Bounds b = n.getBoundsInParent();
+            if (isCollidingBestEffort(tileMap, b)) {
+                foundCollision = true;
+                break;
+            }
+        }
+
+        if (!foundCollision) {
+            // fallback: keep it near the bottom, still safe
+            return maxY;
+        }
+
+        // We are colliding. Move up until we are NOT colliding anymore.
+        // This puts the player "on top" of the solid tile instead of inside it.
+        for (int i = 0; i < 200; i++) {
+            Bounds b = n.getBoundsInParent();
+            if (!isCollidingBestEffort(tileMap, b)) {
+                break;
+            }
+            setPlayerPositionBestEffort(player, x, getCurrentY(player, n) - 1);
+            forceLayout(root, n);
+        }
+
+        // final tiny safety margin
+        return getCurrentY(player, n) - 1;
+    }
+
+    private double getCurrentY(Player player, Node n) {
+        Double currentY = getDoubleIfExists(player, "getY");
+        if (currentY == null) currentY = getDoubleIfExists(player, "getPlayerY");
+        if (currentY != null) return currentY;
+        return n.getLayoutY();
+    }
+
+    private static void setPlayerPositionBestEffort(Player player, double x, double y) {
+        if (player == null) return;
+
+        if (invokeIfExists(player, "setPosition", new Class[]{double.class, double.class}, new Object[]{x, y})) return;
+
+        boolean xOk = invokeIfExists(player, "setX", new Class[]{double.class}, new Object[]{x})
+                || invokeIfExists(player, "setPlayerX", new Class[]{double.class}, new Object[]{x});
+        boolean yOk = invokeIfExists(player, "setY", new Class[]{double.class}, new Object[]{y})
+                || invokeIfExists(player, "setPlayerY", new Class[]{double.class}, new Object[]{y});
+        if (xOk || yOk) return;
+
+        Node n = player.getNode();
+        if (n != null) {
+            n.setLayoutX(x);
+            n.setLayoutY(y);
+        }
+    }
+
+    private static void resetPlayerMotionBestEffort(Player player) {
+        if (player == null) return;
+
+        if (invokeIfExists(player, "setVelocity", new Class[]{double.class, double.class}, new Object[]{0.0, 0.0})) return;
+
+        invokeIfExists(player, "resetVelocity", new Class[]{}, new Object[]{});
+        invokeIfExists(player, "resetMovement", new Class[]{}, new Object[]{});
+        invokeIfExists(player, "setOnGround", new Class[]{boolean.class}, new Object[]{false});
+    }
+
+    private static void nudgePlayerUpUntilFreeBestEffort(Player player, TileMap tileMap, int maxSteps, double stepY) {
+        if (player == null || tileMap == null) return;
+
+        Node n = player.getNode();
+        if (n == null) return;
+
+        for (int i = 0; i < maxSteps; i++) {
+            if (!isCollidingBestEffort(tileMap, n.getBoundsInParent())) {
+                return;
+            }
+
+            boolean moved = false;
+            Double currentY = getDoubleIfExists(player, "getY");
+            if (currentY == null) currentY = getDoubleIfExists(player, "getPlayerY");
+            if (currentY != null) {
+                moved = invokeIfExists(player, "setY", new Class[]{double.class}, new Object[]{currentY - stepY})
+                        || invokeIfExists(player, "setPlayerY", new Class[]{double.class}, new Object[]{currentY - stepY});
+            }
+
+            if (!moved) {
+                n.setLayoutY(n.getLayoutY() - stepY);
+            }
+        }
+    }
+
+    private static boolean isCollidingBestEffort(TileMap tileMap, Bounds bounds) {
+        if (tileMap == null || bounds == null) return false;
+
+        Boolean b1 = (Boolean) invokeReturnIfExists(tileMap, "isColliding",
+                new Class[]{Bounds.class}, new Object[]{bounds});
+        if (b1 != null) return b1;
+
+        Boolean b2 = (Boolean) invokeReturnIfExists(tileMap, "collides",
+                new Class[]{double.class, double.class, double.class, double.class},
+                new Object[]{bounds.getMinX(), bounds.getMinY(), bounds.getWidth(), bounds.getHeight()});
+        if (b2 != null) return b2;
+
+        Boolean b3 = (Boolean) invokeReturnIfExists(tileMap, "isSolidRect",
+                new Class[]{double.class, double.class, double.class, double.class},
+                new Object[]{bounds.getMinX(), bounds.getMinY(), bounds.getWidth(), bounds.getHeight()});
+        if (b3 != null) return b3;
+
+        return false;
+    }
+
+    private static boolean invokeIfExists(Object target, String methodName, Class<?>[] sig, Object[] args) {
+        try {
+            Method m = target.getClass().getMethod(methodName, sig);
+            m.setAccessible(true);
+            m.invoke(target, args);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private static Object invokeReturnIfExists(Object target, String methodName, Class<?>[] sig, Object[] args) {
+        try {
+            Method m = target.getClass().getMethod(methodName, sig);
+            m.setAccessible(true);
+            return m.invoke(target, args);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static Double getDoubleIfExists(Object target, String methodName) {
+        try {
+            Method m = target.getClass().getMethod(methodName);
+            m.setAccessible(true);
+            Object r = m.invoke(target);
+            if (r instanceof Number) return ((Number) r).doubleValue();
+            return null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    // ============================
+    // Existing helper methods
+    // ============================
 
     private static List<double[]> jitterSpawns(
             List<double[]> original,
@@ -405,40 +614,23 @@ public class Game extends Application {
         return raw.stream().map(s -> String.format("%-" + width + "s", s).replace(' ', '.')).toList();
     }
 
-    public static void main(String[] args) {
-        launch(args);
-    }
-    // Add this method inside Game class
     private List<String> alignLevelToGround(List<String> rawLines) {
-        // 1. Get the tile size (assuming it's available in TileMap)
-        // If TileMap.TILE_SIZE is not public, check your TileMap.java and replace '32' with the actual number (usually 32, 40, or 64)
         int tileSize = TileMap.TILE_SIZE;
-
-        // 2. Calculate map height in pixels
         int mapHeight = rawLines.size() * tileSize;
-
-        // 3. Define where the "floor" is.
-        // You set ground at (WINDOW_HEIGHT - 80).
         int floorY = WINDOW_HEIGHT - 80;
-
-        // 4. Calculate how much empty space is currently below the map
         int emptyPixels = floorY - mapHeight;
-
-        // 5. Convert pixels to rows (round down to be safe)
         int rowsToShift = emptyPixels / tileSize;
 
-        if (rowsToShift <= 0) return rawLines; // Map is already tall enough
+        if (rowsToShift <= 0) return rawLines;
 
-        // 6. Create a blank row string of the correct width
         int width = rawLines.get(0).length();
-        String emptyRow = ".".repeat(width); // creates "......"
+        String emptyRow = ".".repeat(width);
 
-        // 7. Create a new list with padding at the top
         List<String> newLevel = new ArrayList<>();
         for (int i = 0; i < rowsToShift; i++) {
-            newLevel.add(emptyRow); // Add air at the top
+            newLevel.add(emptyRow);
         }
-        newLevel.addAll(rawLines); // Add the actual level below
+        newLevel.addAll(rawLines);
 
         return newLevel;
     }
@@ -447,5 +639,9 @@ public class Game extends Application {
         if (scene != null && scene.getRoot() != null) {
             scene.getRoot().requestFocus();
         }
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }
